@@ -10,8 +10,8 @@ import matplotlib as mpl
 from scipy import integrate
 from scipy import optimize
 
-NA = 64
-Ns =18
+NA = 128
+Ns =8
 K = 90       
 ws = 0.524
 
@@ -50,7 +50,7 @@ numA = 15
 sigs = np.zeros(numA)
 atimes = np.zeros(numA)
 atimes2 = np.zeros(numA)
-alpha = 0.279
+alpha = 0
 for acount in range(numA):
     
     sigma  = 2.5+0.5*float(acount)
@@ -58,7 +58,7 @@ for acount in range(numA):
     
     A = np.log(K)/(2.0) - 1/sigma
     B = np.log(K)
-    N2 = int(NA*(A/B) -1)
+    N2 = int(0.5*NA) #int(NA*(A/B) -1)
     
     Q = np.zeros((N2,N2))
 
