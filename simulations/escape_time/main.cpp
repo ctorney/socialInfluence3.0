@@ -29,6 +29,7 @@ using namespace NGraph;
 void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rng* r);
 void printGraph(Graph G);
 float cluster_coeff(Graph A, int N);
+float cluster_coeff_v(Graph G, int v);
 int main() 
 {
 
@@ -46,9 +47,9 @@ int main()
     r = gsl_rng_alloc (T);
 
     // number of reps
-    int numBlocks = 1;//256;
+    int numBlocks = 256;
     // length of grid
-    int N = 512;
+    int N = 64;
     int N2 = 0.5 * N;
     int N4 = 0.5 * N2;
     int N_ALL = N * numBlocks;
@@ -98,8 +99,14 @@ int main()
         sprintf(fileName, "../output/time-%d.npy", int(2.0*NL));
         for (int G=0;G<sigCount;G++)
         {
-            generateNetwork(h_net, numBlocks, N, Ns, 1.5,r);
-            return 0;
+            generateNetwork(h_net, numBlocks, N, Ns, 0.2,r);
+             // generate network
+            /*for (int b=0;b<numBlocks;b++)
+            {
+                for (int i=0;i<N;i++)
+                    for (int j=0;j<Ns;j++)
+                        h_net[b*N*Ns + i*Ns + j] = gsl_rng_uniform_int(r,N);
+            }*/
             CUDA_CALL(cudaMemcpy (d_net, h_net, (N_ALL*Ns) * sizeof(int), cudaMemcpyHostToDevice));
 
             float sigma = 2.5 + 0.5 * float(G);
@@ -196,92 +203,114 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
 {
 
     float rn;
-    for (int b=0;b<blocks;b++)
+    for (int bl=0;bl<blocks;bl++)
     {
         Graph G;
         // create a random network
         for (int i=0;i<N;i++)
+    //        for (int k=0;k<edges;k++)
             while (G.out_neighbors(i).size()<edges)
             {
                 int j = gsl_rng_uniform_int(r,N);
                 G.insert_edge_noloop(i, j);
+      //          G.insert_edge(i, j);
             }
 
+
         // add in transitivity
-        for ( Graph::const_iterator a = G.begin(); a != G.end(); a++)
+        float cc = cluster_coeff(G, N);
+        int maxIters = 100000;
+        while ((cc<trans)&&(maxIters>0))
         {
+            maxIters--;
+            int v = gsl_rng_uniform_int(r,N);
+            Graph::vertex_set vSo = G.out_neighbors(v);
+            Graph::vertex_set::const_iterator iter = vSo.begin(); 
+            rn = gsl_rng_uniform_int(r,edges);
+            advance(iter,rn);
+            int n1=*iter;
+            int n2=n1;
+            while (n1==n2)
+            {
+                iter = vSo.begin(); 
+                rn = gsl_rng_uniform_int(r,edges);
+                advance(iter,rn);
+                n2=*iter;
+            }
+            if (G.includes_edge(n1,n2))
+                continue;
+            // now pick a neighbour of n1 at random
+            Graph::vertex_set n1So = G.out_neighbors(n1);
+            iter = n1So.begin(); 
+            rn = gsl_rng_uniform_int(r,edges);
+            advance(iter,rn);
+            int p1=*iter;
+            while (p1==v)
+            {
+                iter = n1So.begin(); 
+                rn = gsl_rng_uniform_int(r,edges);
+                advance(iter,rn);
+                p1=*iter;
 
-            int ap = G.node(a);
-            Graph::vertex_set aSo = G.out_neighbors(a);
-            for (Graph::vertex_set::const_iterator b = aSo.begin(); b !=aSo.end(); b++)
-                if (gsl_rng_uniform(r) < trans)
-                {
-                    //                   int b = *t;
-                    Graph::vertex_set bSo = G.out_neighbors(*b);
-                    //                   int sz = G.out_neighbors(b).size();
-                    //                  if (sz==0) continue; 
-                    // pick an out neighbour of a that is not b
-                    Graph::vertex_set::const_iterator e = aSo.begin(); 
-                    rn = gsl_rng_uniform_int(r,edges);
-                    advance(e,rn);
-                    while (G.node(e)==G.node(b))
-                    {
-                        e = aSo.begin(); 
-                        rn = gsl_rng_uniform_int(r,edges);
-                        advance(e,rn);
+            }
+            // now pick an in-neighbour of n2 at random
+            Graph::vertex_set n2Si = G.in_neighbors(n2);
+            iter = n2Si.begin(); 
+            int sz = G.in_neighbors(n2).size();
+            if (sz<2)
+                continue;
+            rn = gsl_rng_uniform_int(r,sz);
+            advance(iter,rn);
+            int p2=*iter;
+            while (p2==v)
+            {
+                iter = n2Si.begin(); 
+                rn = gsl_rng_uniform_int(r,sz);
+                advance(iter,rn);
+                p2 = *iter;
 
-                    }
-                    // now pick a neighbour of b at random
-                    Graph::vertex_set::const_iterator c = bSo.begin(); 
-                    rn = gsl_rng_uniform_int(r,edges);
-                    advance(c,rn);
-                    while (G.node(a)==G.node(c))
-                    {
-                        c = bSo.begin(); 
-                        rn = gsl_rng_uniform_int(r,edges);
-                        advance(c,rn);
-
-                    }
-                    // if a is already connected to c then do nothing
-                    if (G.includes_edge(G.node(a),G.node(c)))
-                        continue;
-
-                    // now pick an in neighbour of c that's not b to rewire in compensation
-                    int sz = G.in_neighbors(*c).size();
-                    if (sz>1) 
-                    {
-                        Graph::vertex_set cSi = G.in_neighbors(*c);
-                        Graph::vertex_set::const_iterator d = cSi.begin(); 
-                        rn = gsl_rng_uniform_int(r,sz);
-                        advance(d,rn);
-                        while (G.node(d)==G.node(b))
-                        {
-                            d = cSi.begin(); 
-                            rn = gsl_rng_uniform_int(r,sz);
-                            advance(d,rn);
-
-                        }
-                        //               G.remove_edge(make_pair(*d,*c));
-                        if (!G.includes_edge(G.node(d),G.node(e)))
-                        {
-                            G.remove_edge(G.node(d),G.node(c));//make_pair(a,*c));
-                            G.insert_edge(G.node(d),G.node(e));//make_pair(a,*c));
-                        }
-                        //               G.insert_edge(make_pair(*d,*e));
-                    }
-                    //              cout<<ap<<":"<<*b<<":"<<*c<<":"<<*e<<":"<<endl;
-                    //               printGraph(G);
-                    G.insert_edge(G.node(a),G.node(c));//make_pair(a,*c));
-                    G.remove_edge(G.node(a),G.node(e));//make_pair(a,*c));
-                    //             G.remove_edge(make_pair(a,*e));
+            }
+            if (p1==p2)
+                continue;
+            if (G.includes_edge(p2, p1))
+                continue;
 
 
+            bool reduceCC = false;
+            Graph::vertex_set n1Si = G.in_neighbors(n1);
+            for (Graph::vertex_set::const_iterator b = n1Si.begin(); b !=n1Si.end(); b++)
+                if (G.includes_edge(G.node(b),p1))
+                    if (cluster_coeff_v(G,G.node(b))>cc)
+                        reduceCC = true;
 
-                }
+            if (reduceCC) continue;
+            for (Graph::vertex_set::const_iterator b = n2Si.begin(); b !=n2Si.end(); b++)
+                if (G.includes_edge(G.node(b),p2))
+                    if (cluster_coeff_v(G,G.node(b))>cc)
+                        reduceCC = true;
+
+            if (reduceCC) continue;
+
+            G.remove_edge(n1, p1); 
+            G.remove_edge(p2, n2); 
+            G.insert_edge(n1, n2);
+            G.insert_edge(p2, p1);
+            float cc2 = cluster_coeff(G, N);
+            if (cc2<cc)
+            {
+            G.insert_edge(n1, p1); 
+            G.insert_edge(p2, n2); 
+            G.remove_edge(n1, n2);
+            G.remove_edge(p2, p1);
+
+            }
+            else
+                cc=cc2;
+  //          cout<<blocks<<":"<<bl<<":"<<cc<<endl;
+
 
             //               net[b*N*edges + i*edges + j++] = *t;
         }
-                    cout<<cluster_coeff(G, N)<<endl;
 
         // save to a list
         for ( Graph::const_iterator p = G.begin(); p != G.end(); p++)
@@ -291,7 +320,7 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
             int i = G.node(p);
             Graph::vertex_set So = G.out_neighbors(p);
             for (Graph::vertex_set::const_iterator t = So.begin(); t !=So.end(); t++)
-                net[b*N*edges + i*edges + j++] = *t;
+                net[bl*N*edges + i*edges + j++] = *t;
         }
     }
 
@@ -329,7 +358,6 @@ void printGraph(Graph G)
 float cluster_coeff(Graph G, int N) 
 {
     float av_cc = 0.0f;
-    int count = 0;
     for ( Graph::const_iterator a = G.begin(); a != G.end(); a++)
     {
         Graph::vertex_set aSo = G.out_neighbors(a);
@@ -341,8 +369,18 @@ float cluster_coeff(Graph G, int N)
         //cout<<links<<endl;
         double  e = G.out_neighbors(a).size(); 
         av_cc +=  links / (e * (e-1));
-        count++;
     }
-    cout<<count<<endl;
     return av_cc/float(N);
+}
+float cluster_coeff_v(Graph G, int v) 
+{
+    Graph::vertex_set aSo = G.out_neighbors(v);
+    float links = 0.0;
+    for (Graph::vertex_set::const_iterator b = aSo.begin(); b !=aSo.end(); b++)
+        for (Graph::vertex_set::const_iterator c = aSo.begin(); c !=aSo.end(); c++)
+            if (G.includes_edge(G.node(b),G.node(c)))
+                links+=1.0;
+    //cout<<links<<endl;
+    double  e = G.out_neighbors(v).size(); 
+    return links / (e * (e-1));
 }
