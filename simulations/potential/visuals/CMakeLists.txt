@@ -1,0 +1,3 @@
+
+ADD_LIBRARY( plotGrid plotGrid )
+INCLUDE_DIRECTORIES(${INF_SOURCE_DIR}/include)
