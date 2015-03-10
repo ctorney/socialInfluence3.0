@@ -8,10 +8,10 @@ int main()
     gsl_rng_env_setup();
 
     // number of reps
-    int numBlocks = 1;//512;
+    int numBlocks = 512;
 
     // number of individuals in a group
-    int N = 64;
+    int N = 128;
     int N_ALL = N * numBlocks;
 
     // number of social observations
@@ -24,6 +24,7 @@ int main()
     float* h_down = new float [N+1];
     int* h_upcount = new int [N+1];
     int* h_net = new int [Ns * N_ALL];
+    cout<<Ns*N_ALL<<endl;
     int* h_states = new int[N_ALL];
     int* h_blockTotals = new int[numBlocks];
     int* h_blockTimes = new int[numBlocks];
@@ -73,9 +74,9 @@ int main()
             CUDA_CALL(cudaMemset (d_down, 0, sizeof(float) * (N + 1)));
             CUDA_CALL(cudaMemset (d_upcount, 0, sizeof(int) * (N + 1)));
 
-            float cluster = 0.00;
-            generateNetworkTri(h_net, numBlocks, N, Ns, cluster,r);
-            return 0;
+            float cluster = 0.65;
+            generateNetworkSW(h_net, numBlocks, N, Ns, cluster,r);
+//           return 0;
 
             // generate network
             /*for (int b=0;b<numBlocks;b++)
@@ -86,14 +87,14 @@ int main()
             }*/
             CUDA_CALL(cudaMemcpy (d_net, h_net, (N_ALL*Ns) * sizeof(int), cudaMemcpyHostToDevice));
 
-            float sigma = 4.0 + 0.5 * float(G);
-            char fileName[30];
+            float sigma = 20.0 + 0.5 * float(G);
+            char fileName[300];
             sprintf(fileName, "../output/potential%f-%f.npy", sigma, cluster);
 
 
             for (int b=0;b<numBlocks;b++)
                 h_blockTimes[b] = -1;
-            int maxTime = 200;
+            int maxTime = 2000;
 
 
             for (int t=0;t<maxTime;t++)
@@ -127,11 +128,11 @@ int main()
     }
     return 0;
 }
-void generateNetworkTri(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
+void generateNetworkTri2(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
 {
 
     float av_cc = 0.0f;
-    int allEdges[N*(edges+1)], a[3], b[N], c[N];
+    int allEdges[N*(edges+1)], a[2], b[N], c[N];
     for (int bl=0;bl<blocks;bl++)
     {
 
@@ -142,27 +143,43 @@ void generateNetworkTri(int* net, int blocks, int N, int edges, float trans, gsl
             b[i] = c[i] = i;
         }
 
-        while (Ntri>=3)
+        while (Ntri>1)
         {
-            gsl_ran_choose (r, a, 3, c, Ntri, sizeof(int));
-            for (int i=0;i<3;i++)
-                for (int j=0;j<3;j++)
-                {
-                    if (i==j)
-                        continue;
-                    int ni = b[a[i]];
-                    int nj = b[a[j]];
-                    allEdges[ni*(edges+1)]++;
-                    allEdges[ni*(edges+1) + allEdges[ni*(edges+1)]] = nj;
-                }
-
-            for (int i=0;i<3;i++)
+            // pick 2 individuals
+            gsl_ran_choose (r, a, 2, c, Ntri, sizeof(int));
+            int ni = b[a[0]];
+            int nj = b[a[1]];
+            allEdges[ni*(edges+1)]++;
+            allEdges[ni*(edges+1) + allEdges[ni*(edges+1)]] = nj;
+            allEdges[nj*(edges+1)]++;
+            allEdges[nj*(edges+1) + allEdges[nj*(edges+1)]] = ni;
+            // now connect j to all i's friends
+            for (int i=0;i<allEdges[ni*(edges+1)];i++)
             {
-                int ni = b[a[i]];
+                int nk = allEdges[ni*(edges+1) + i + 1];
+                if (nk==nj) continue;
+                if (allEdges[nj*(edges+1)]<edges)
+                    allEdges[nj*(edges+1) + ++allEdges[nj*(edges+1)]] = nk;
+              //  if (allEdges[nk*(edges+1)]<edges)
+              //      allEdges[nk*(edges+1) + ++allEdges[nk*(edges+1)]] = nj;
+            }
+            for (int i=0;i<allEdges[nj*(edges+1)];i++)
+            {
+                int nk = allEdges[nj*(edges+1) + i + 1];
+                if (nk==ni) continue;
+                if (allEdges[ni*(edges+1)]<edges)
+                    allEdges[ni*(edges+1) + ++allEdges[ni*(edges+1)]] = nk;
+               // if (allEdges[nk*(edges+1)]<edges)
+               //     allEdges[nk*(edges+1) + ++allEdges[nk*(edges+1)]] = ni;
+            }
+
+
+            for (int i=0;i<N;i++)
+            {
                 // check to see if this individual still has two free edges spare
                 // if not remove it from the list
-                if (allEdges[ni*(edges+1)]>(edges-2))
-                    b[a[i]] = b[--Ntri];
+                if (allEdges[i*(edges+1)]==(edges))
+                    b[i] = b[--Ntri];
             }
 
         }
@@ -186,12 +203,12 @@ void generateNetworkTri(int* net, int blocks, int N, int edges, float trans, gsl
         av_cc +=cluster_coeff(allEdges,N,edges); 
         for (int i=0;i<N;i++)
         {
-            cout<<i<<":";
+           // cout<<i<<":";
             for (int j=0;j<edges;j++){
                 net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
-                cout<<":"<<net[bl*N*edges + i*edges + j];
+            //    cout<<":"<<net[bl*N*edges + i*edges + j];
             }
-            cout<<endl;
+            //cout<<endl;
         }
 
 
@@ -199,6 +216,107 @@ void generateNetworkTri(int* net, int blocks, int N, int edges, float trans, gsl
 
     }
         cout<<av_cc/float(blocks)<<endl;
+}
+void generateNetworkTri(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
+{
+    float av_cc = 0.0f;
+    int allEdges[N*(edges+1)], a[3], b[N], c[N];
+     //   net[807040] =100;
+    
+    for (int bl=0;bl<blocks;bl++)
+    {
+        //cout<<bl<<endl;
+        
+      //  net[87040] =100;//allEdges[i*(edges+1)+j+1];
+        int Ntri = N;
+        for (int i=0;i<N;i++)
+        {
+            allEdges[i*(edges+1)]=0;
+            b[i] = c[i] = i;
+        }
+        while (Ntri>=3)
+        {
+            gsl_ran_choose (r, a, 3, c, Ntri, sizeof(int));
+            
+      //      for (int i=0;i<3;i++)
+      //      {
+       //         {
+        //            int ni = b[a[i]];
+         //           //if (bl==106)
+          //      if (allEdges[ni*(edges+1)]>=(edges-2))
+           //         {
+            //            cout<<"OVER"<<a[i]<<endl;
+             //   for (int i=0;i<N;i++)
+              //      cout<<allEdges[i*(edges+1)]<<" b "<<b[i]<<" c "<<c[i]<<endl;;
+   //             cout<<"++++++++++++++++"<<endl;
+    //            cout<<Ntri<<" "<<a[0]<<" "<<a[1]<<" "<<a[2]<<endl;
+    //            cout<<bl<<Ntri<<" "<<b[a[0]]<<" "<<b[a[1]]<<" "<<b[a[2]]<<endl;
+     //           cout<<"++++++++++++++++"<<endl;
+      //              if (allEdges[ni*(edges+1)]>edges)
+       //                  throw std::invalid_argument( "fucked it" );
+        //            }
+         //       }}
+            for (int i=0;i<3;i++)
+                for (int j=0;j<3;j++)
+                {
+                    if (i==j)
+                        continue;
+                    int ni = b[a[i]];
+                    int nj = b[a[j]];
+                    allEdges[ni*(edges+1)]++;
+                    allEdges[ni*(edges+1) + allEdges[ni*(edges+1)]] = nj;
+                }
+
+            Ntri=0;
+            for (int i=0;i<N;i++)
+            {
+                // check to see if this individual still has two free edges spare
+                // if not remove it from the list
+                if (allEdges[i*(edges+1)]<=(edges-2))
+                {
+                    b[Ntri++] = i;
+                }
+            }
+        }
+        for (int i=0;i<N;i++)
+        {
+            // fill any outstanding edges
+            while (allEdges[i*(edges+1)]<edges)
+            {
+                allEdges[i*(edges+1)]++;
+                allEdges[i*(edges+1) + allEdges[i*(edges+1)]] = gsl_rng_uniform_int(r,N);
+            }
+            // randomize according to transitivity metric
+            for (int j=0;j<edges;j++)
+                if (gsl_rng_uniform(r)>trans)
+                    allEdges[i*(edges+1)+j+1]= gsl_rng_uniform_int(r,N);
+        }
+ //       net[87040] =100;//allEdges[i*(edges+1)+j+1];
+  //      cout<<"ok2"<<endl;
+        av_cc +=cluster_coeff(allEdges,N,edges);
+    //    cout<<av_cc<<endl;
+        for (int i=0;i<N;i++)
+        {
+ //           cout<<i<<endl;
+ //           cout<<i<<":";
+            for (int j=0;j<edges;j++){
+         //       cout<< "bl: "<<bl<<"n"<<N<<"e"<<edges<<"i"<<i<<"j"<< j<<endl;
+       //         cout<<":"<<bl*N*edges + i*edges + j<<endl;
+ //               cout<<N*(edges+1)<<":";
+  //              cout<<allEdges[i*(edges+1)+j+1]<<":";
+   //             cout<<i*(edges+1)+j+1<<endl;
+ //               net[87040] =100;//allEdges[i*(edges+1)+j+1];
+   //             cout<<"ok3"<<endl;
+     //           int md = bl*N*edges + i*edges + j;//allEdges[i*(edges+1)+j+1];
+   //             net[md] =100;//allEdges[i*(edges+1)+j+1];
+           //     cout<<"ok2"<<endl;
+                net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
+             //   cout<<"done!"<<endl;
+            }
+    //        cout<<endl;
+        }
+    }
+    cout<<av_cc/float(blocks)<<endl;
 }
 void generateNetworkSW(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
 {
