@@ -1,0 +1,138 @@
+
+\documentclass[aps,prl,twocolumn,showpacs,superscriptaddress,groupedaddress]{revtex4} 
+\usepackage{amsmath,amsfonts}  %for mathstyles
+\usepackage{hyperref}
+\usepackage{color}
+%\usepackage{colortbl}
+\usepackage{wasysym}
+%\usepackage{ifsym}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{graphicx}
+%\journal{..}
+%opening
+
+\begin{document}
+%\begin{frontmatter}
+%\preprint{}
+\title{Optimal strategies of influence in structured populations}
+\author{Colin J. Torney}
+\affiliation{Centre for Mathematics \& the Environment, University of Exeter, Penryn Campus, Cornwall, UK}
+%\affiliation{Department of Ecology \& Evolutionary Biology, Princeton University, \\Princeton, New Jersey 08544}
+\author{Simon A. Levin}
+\affiliation{Department of Ecology \& Evolutionary Biology, Princeton University, \\Princeton, New Jersey 08544}
+
+\begin{abstract}
+Incorrect opinions often persist for long periods within interacting populations. In many scenarios this is due to conformity and the devaluation of individual opinions when they contradict observed social information. Both individual characteristics and system-level properties control the expected time to transition away from an out-dated collective opinion. These factors also determine the effectiveness of strategies to engineer transitions to the optimal state. By analysing a model of opinion dynamics, we show here how the optimal strategy of influence relates to the underlying interaction network. 
+\end{abstract}
+\maketitle
+%\end{frontmatter}
+
+We assume a binary decision process in which individuals make use of social and personal information. Personal information is described by an estimate of a global information source $G\in(1,-1)$. The estimate made by individual $i$, denoted $g_i$, is defined as a random variable drawn from a Laplace distribution, centered on the correct option,
+\begin{equation}
+P(g_i) = \frac{1}{2\sigma} \exp{ \left( - \frac{\vert g_i - G \vert}{\sigma} \right)}
+\end{equation}
+(This distribution is chosen for analytical tractability, but equivalent results may be attained for other symmetric distributions, e.g. Gaussian.)
+
+Each individual, $i$, holds an opinion $S_i \in \{ -1,1\}$ that is observable by others in its local neighborhood and is correct when $S_i = \mbox{sign}(G)$. Individuals update their states based on social and personal information and a Bayesian decision rule \cite{nitzan1982optimal,perez2011collective, Perreault, torney2015} is employed. This means that an individual will switch to the state that is the most likely to be correct, given all available information. Formally, individual $i$ will adopt the state $S_i=1$ if
+\begin{equation}
+ P\left(G \ge 0\big| g_i, \mathbf{S}_{j\in \mathcal{N}_i}\right)  > P\left(G < 0\big| g_i, \mathbf{S}_{j\in \mathcal{N}_i}\right)
+\label{opt_sol1}
+\end{equation}
+where $\mathcal{N}_i$ defines the social interaction neighborhood. To impose a decision rule as a function of $g_i$ we rearrange Eqn.~\ref{opt_sol1} using Bayes' rule, assume individuals place equal weighting on the opinions of neighbors, that they know the level of noise in the environmental cue, and that it is symmetric around zero. Eqn.~\ref{opt_sol1} may then be written as,
+\begin{equation}
+\frac{\exp{ \left( - \frac{\vert g_i -  \infty \vert}{\sigma} \right)}}{\exp{ \left( - \frac{\vert g_i + \infty \vert}{\sigma} \right)}} > \chi^{1-2x_L}.
+\label{rule}
+\end{equation}
+Here we have denoted the fraction of neighbors an individual observes in the state $S=1$ as $x_L$, used $\pm \infty$ as estimates of the actual value of $G$ (these will cancel), and introduced a social weighting variable $\chi$ which may be interpreted as the belief that a single neighbor is correct rescaled by the neighborhood size. This rescaling means decisions are based on the fraction of neighbors that are correct in the local neighborhood and not the absolute number, ensuring a comparison can be made between social networks with varying average degree.
+
+Rearranging Eqn.~\ref{rule} leads to a decision rule such that individual $i$ will adopt the opinion $S_i = 1$ iff
+\begin{equation}
+g_i >  \sigma\ln\chi  \left(\frac{1}{2}-x_L\right) 
+\label{opt_rule}
+\end{equation}
+
+
+%, i.e. $\chi = P(S_j=\mbox{sign}(G))^{\vert \mathcal{N}_i \vert }$  the and denote the fraction of neighbors an individual observes in the state $S=1$ as $x_L$. Then the decision rule for the focal individual is to switch to the state $1$ if
+
+
+We simulate the model and investigate how influencing the system by altering $\sigma$ is impacted by the size and structure of the interaction network. We begin by assuming all individuals are in the incorrect state, i.e. $S=-1$ and $G=1$, and examine the time to escape this state, denoted $\tau$. Key variables are the transitivity and degree of the social network.
+
+We aim to assess optimal strategies assuming some cost associated with reducing the noise. Cost is per unit time and assumed to scale exponentially so that forcing $\sigma \rightarrow 0$ incurs exponentially increasing costs,
+\begin{equation}
+\mbox{Cost} = \tau (\sigma) e^{\beta N/\sigma}
+\label{cost}
+\end{equation}
+Minimizing Eqn.~\ref{cost} means the optimal level of $\sigma$ is one for which
+\begin{equation}
+N^{-1} \frac{d \ln \tau}{d \sigma} = \beta \sigma^{-2}
+\end{equation}
+%\begin{figure*}
+%\centering
+%\includegraphics[scale=0.4]{figures/fig-chi.eps} 
+%\caption{Probability to transition as a function of local neighbourhood for different values of the sociality weighting $\chi$}
+%\label{fig1}
+%\end{figure*}
+We need to find $\tau$.
+%\section{Mean first passage time away from incorrect state}
+Consider the process as a one-step Markov chain on the integer line from $0$ to $N$. A transition from state $j$ to $j+1$ is written $t^+(j)$ and an opposite transition is denoted $t^-(j)$. An exact expression for the mean first passage time from zero individuals correct to $N_{ESC}$ is \cite{gardiner}
+
+\begin{equation}
+\tau = \sum\limits_{m=0}^{N_{ESC}} \left( \left[ \prod\limits_{j=1}^{m} \frac{t^-(j)}{t^+(j)} \right] \sum\limits_{j=0}^{m} \left[\frac{1}{t^+(j)} \prod\limits_{k=1}^{j} \frac{t^+(k)}{t^-(k)}  \right]   \right)
+\label{noapprox1}
+\end{equation}
+Assume the exists a scaling relation between the transition probabilities as a function of the fraction of individuals correct and the absolute number, such that $t^+(j) = N t^+(j/N)$, i.e. individual decision rates remain constant so larger groups update more frequently. In the large $N$ limit the summation above may be written as an integral~\cite{doering}, 
+
+
+\begin{equation}
+\tau \approx N \int_{0}^{x_{ESC}} \exp\left[N\phi(x)\right] \left[ \int_{0}^{x} \frac{1}{t^+(y)}\exp\left[-N\phi(y)\right] dy \right] dx
+\label{approx1}
+\end{equation}
+where $x_{ESC} = N_{ESC}/N$ and $\phi(x)$ defines the effective potential of the system and is defined as 
+\begin{equation}
+\phi(x) =  -\int_{0}^{x} \ln\left(\frac{t^+(y)}{t^-(y)}\right) dy
+\label{potential}
+\end{equation}
+The asymptotic behavior of Eqn.~\ref{approx1} in the large $N$ limit may be found by employing Laplace's method for approximating integrals. Following ~\cite{vankampen} we make use of the fact that the integrals are dominated by the behavior of the potential near the extrema. As we know the system is bistable, we refer to the metastable incorrect state as $x_1$, the unstable fixed point as $x_2$, and the metastable correct state as $x_3$, with $x_1<x_2\le N_{ESC}/N < x_3$. The outer integral of Eqn.~\ref{approx1} is therefore approximated as
+
+\begin{align}
+N \int_{0}^{x_{ESC}} &\exp\left[N\phi(x)\right] f(x) dx    \nonumber \\ 
+ &\approx \sqrt{\frac{2\pi N}{\vert \phi''(x_2) \vert}}  \exp\left[N\phi(x_2)\right] f(x_2) 
+\label{laplace_out}
+\end{align}
+As $x_1<x_2$ this may be repeated for the inner integral to leave
+\begin{equation}
+\tau \approx  \frac{2\pi \exp\left[N \phi(x_2)-N \phi(x_1) \right] }{t^+(x_1)\sqrt{\vert \phi''(x_2) \vert \phi''(x_1)}}.
+\label{laplace_approx}
+\end{equation}
+Taking logarithms, derivatives, and again assuming large $N$, leaves
+\begin{equation}
+N^{-1}  \frac{d \ln \tau}{d \sigma} \approx -\int_{x_1}^{x_2} \frac{\partial}{\partial \sigma}\ln\left(\frac{t^+(y)}{t^-(y)}\right) dy
+\label{laplace_approx}
+\end{equation}
+
+%\section{Transition rates}
+The dynamics of an update step in stochastic decision process are as follows; first an individual is selected at random from the population, this individual has a personal estimate of the environmental cue $g_i$ and observes the opinions of all its neighbors. The decision rule of Eqn.~\ref{opt_rule} is then employed and the individual will adopt, or remain in, the state most likely to be correct.
+For any value of social information $x_L$ there is a value of personal information above which the individual will switch to $S=1$. We denote this value as $g_c$ and from Eqn.~\ref{opt_rule} 
+\begin{equation}
+g_c(x_L) = \sigma\ln\chi  \left(\frac{1}{2}-x_L\right) 
+\end{equation}
+If $g_i>g_c$ then the individual will switch to $S=1$ otherwise $S=-1$. 
+Dealing first with the transition rate toward the correct state, we may write this as
+\begin{equation}
+%t^+(x) = P(S_i=-1)\sum_{j=0}^{N_s}P\left(g_i>g_c(j/N_s)\right)P\left(x_L=j/N_s|x\right)
+t^+(x) = P(S_i=-1)\sum_{x_{Li}}P\left(g_i>g_c(x_{Li})\right)P\left(x_{Li}|x\right)
+\end{equation}
+where $i$ denotes the selected individual and the summation is taken over all possible values of $x_{Li}$.
+he product of the probability that the focal individual is in the state $S=-1$ by the probability of a given value of $x_L$ by the 
+
+
+%\bibliographystyle{model1-num-names}
+%\bibliographystyle{apalike}
+%\bibliography{DvsLA}
+\bibliographystyle{apsrev}      % basic style, author-year citations
+%\bibliographystyle{spmpsci}      % mathematics and physical sciences
+%\bibliographystyle{spphys}       % APS-like style for physics
+\bibliography{influence}
+
+\end{document}
