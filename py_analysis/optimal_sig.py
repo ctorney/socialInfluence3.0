@@ -54,9 +54,11 @@ def EXTAPPROX1(X,sig):
     return m.exp(-A)*0.5*m.exp((B*X))*(1.0 +  VR*X  +  ((VR)*(alpha*  (Ns-1) - 1.0)) * X**2)
 def SOLVEQUAD1(sig):  
 # ax^2 + bx + C = 0
-    A = np.log(K)/(2.0) - 1.0/float(sig)
+    A = np.log(K)/(2.0)
+    C =  m.exp(-1.0/float(sig))
+    C =  1.0 -1.0/float(sig)
     B = np.log(K)
-    return 1.0/(2*m.exp(A) - B)
+    return 1.0/(2*m.exp(A)*(C) - B)
     VR = 0.5*B**2/float(Ns)
     C = 0.5*B**2/float(Ns)
     D = C*  (alpha*  (Ns-1) - 1.0)
@@ -111,10 +113,12 @@ ex1 = [EXTAPPROX1(x,sigma) for x in xs]
 ex2 = [EXTAPPROX2(x,sigma) for x in xs]
 #for p in pot: print p
 x2 = SOLVEQUAD(sigma)
+x1 = SOLVEQUAD1(sigma)
 x2 = fullX(x2,sigma)
 plt.plot(xs,ex,linestyle='-')
 #plt.plot(xs,(ex1),linestyle='-')
 plt.plot(x2, x2,'ro')
+plt.plot(x1, x1,'ro')
 plt.plot(xs,xs,linestyle='-')
 plt.axis([0, 0.5, 0, 0.5])
 plt.show()
