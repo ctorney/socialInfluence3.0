@@ -67,6 +67,7 @@ We aim to assess optimal strategies assuming some cost associated with reducing 
 Minimizing Eqn.~\ref{cost} means the optimal level of $\sigma$ is one for which
 \begin{equation}
   \frac{d \ln \tau}{d \sigma} = N \beta \sigma^{-2}
+  \label{cost1}
 \end{equation}
 %\begin{figure*}
 %\centering
@@ -125,12 +126,8 @@ Dealing first with the transition rate toward the correct state, we may write th
 t^+(x) = P(S_i=-1)\sum_{x_{L}}P\left(g_i>g_c \right)P\left(x_{L}|x\right)
 \label{up}
 \end{equation}
-<<<<<<< HEAD
 where $i$ denotes the selected individual and the summation is taken over all possible values of $x_{Li}$.
-Given the 
-=======
 where $i$ denotes the selected individual and the summation is taken over all possible values of $x_{L}$. 
->>>>>>> 6efd283e9ca98f1b9878c05706610f9c287ed92f
 
 
 From Eqn.~\ref{lapdist}
@@ -155,14 +152,21 @@ t^-(x) =x \left(1-  e^{1/\sigma } \mathcal{F}(x)\right)
 \end{equation}
 Taking the derivative of Eqn.~\ref{laplace_cost} and employing a Maclaurin series expansion leaves
 \begin{equation}
-  \frac{d \ln \tau}{d \sigma} \approx - N \sigma^{-2} \int_{x_1}^{x_2} \left(1 + \sum_{n=1}^{\infty} \left(e^{1/\sigma } \mathcal{F}(y)\right)^n  \right) dy
+  \frac{d \ln \tau}{d \sigma} \approx N \sigma^{-2} \int_{x_1}^{x_2} \left(1 + \sum_{n=1}^{\infty} \left(e^{1/\sigma } \mathcal{F}(y)\right)^n  \right) dy
 \label{laplace_cost2}
 \end{equation}
 The extrema of the potential, $x_1,x_2$, are at the points where $t^+(x)=t^-(x)$, i.e. where $x=e^{1/\sigma } \mathcal{F}(x)$. Since $e^{1/\sigma } \mathcal{F}(x)<x$ $\forall x \in [x_1,x_2]$ the summation terms in the integrand are all strictly less than $x$, hence
 \begin{equation}
-  \frac{d \ln \tau}{d \sigma} \approx - N \sigma^{-2} \left({x_2}-{x_1}\right) + \mathcal{O}\left( \left(x_2-x_1\right)^2\right)
+  \frac{d \ln \tau}{d \sigma} \approx  N \sigma^{-2} \left({x_2}-{x_1}\right) + \mathcal{O}\left( \left(x_2-x_1\right)^2\right)
 \label{laplace_cost2}
 \end{equation}
+Combining Eqns.~\ref{cost1} and~\ref{laplace_cost2} gives the location of minimal cost as
+\begin{equation}
+  \beta =  \left({x_2}-{x_1}\right) 
+\label{laplace_cost_final}
+\end{equation}
+where in deriving this expression we have neglected terms of $\mathcal{O}(1/N)$ and $\mathcal{O}\left( \left(x_2-x_1\right)^2\right)$
+Optimal strategy is therefore achieved by setting $\sigma$ so that the difference between the two extrema is equal to $\beta$.
 %\begin{align}
 %P\left(g_i>g_c \right) =
 %1 - \frac{1}{2}\exp{\left[-1/\sigma + \ln\chi  \left(\frac{1}{2}-x_L\right)\right] }%&\mbox{if } \\
