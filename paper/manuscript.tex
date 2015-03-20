@@ -31,6 +31,7 @@ Incorrect opinions often persist for long periods within interacting populations
 We assume a binary decision process in which individuals make use of social and personal information. Personal information is described by an estimate of a global information source $G\in(1,-1)$. The estimate made by individual $i$, denoted $g_i$, is defined as a random variable drawn from a Laplace distribution, centered on the correct option,
 \begin{equation}
 P(g_i) = \frac{1}{2\sigma} \exp{ \left( - \frac{\vert g_i - G \vert}{\sigma} \right)}
+\label{lapdist}
 \end{equation}
 (This distribution is chosen for analytical tractability, but equivalent results may be attained for other symmetric distributions, e.g. Gaussian.)
 
@@ -65,7 +66,7 @@ We aim to assess optimal strategies assuming some cost associated with reducing 
 \end{equation}
 Minimizing Eqn.~\ref{cost} means the optimal level of $\sigma$ is one for which
 \begin{equation}
-N^{-1} \frac{d \ln \tau}{d \sigma} = \beta \sigma^{-2}
+  \frac{d \ln \tau}{d \sigma} = N \beta \sigma^{-2}
 \end{equation}
 %\begin{figure*}
 %\centering
@@ -107,26 +108,68 @@ As $x_1<x_2$ this may be repeated for the inner integral to leave
 \end{equation}
 Taking logarithms, derivatives, and again assuming large $N$, leaves
 \begin{equation}
-N^{-1}  \frac{d \ln \tau}{d \sigma} \approx -\int_{x_1}^{x_2} \frac{\partial}{\partial \sigma}\ln\left(\frac{t^+(y)}{t^-(y)}\right) dy
-\label{laplace_approx}
+  \frac{d \ln \tau}{d \sigma} \approx - N \int_{x_1}^{x_2} \frac{\partial}{\partial \sigma}\ln\left(\frac{t^+(y)}{t^-(y)}\right) dy
+\label{laplace_cost}
 \end{equation}
 
 %\section{Transition rates}
 The dynamics of an update step in stochastic decision process are as follows; first an individual is selected at random from the population, this individual has a personal estimate of the environmental cue $g_i$ and observes the opinions of all its neighbors. The decision rule of Eqn.~\ref{opt_rule} is then employed and the individual will adopt, or remain in, the state most likely to be correct.
 For any value of social information $x_L$ there is a value of personal information above which the individual will switch to $S=1$. We denote this value as $g_c$ and from Eqn.~\ref{opt_rule} 
 \begin{equation}
-g_c(x_L) = \sigma\ln\chi  \left(\frac{1}{2}-x_L\right) 
+g_c  = \sigma\ln\chi  \left(\frac{1}{2}-x_L\right) 
 \end{equation}
 If $g_i>g_c$ then the individual will switch to $S=1$ otherwise $S=-1$. 
 Dealing first with the transition rate toward the correct state, we may write this as
 \begin{equation}
 %t^+(x) = P(S_i=-1)\sum_{j=0}^{N_s}P\left(g_i>g_c(j/N_s)\right)P\left(x_L=j/N_s|x\right)
-t^+(x) = P(S_i=-1)\sum_{x_{Li}}P\left(g_i>g_c(x_{Li})\right)P\left(x_{Li}|x\right)
+t^+(x) = P(S_i=-1)\sum_{x_{L}}P\left(g_i>g_c \right)P\left(x_{L}|x\right)
+\label{up}
 \end{equation}
+<<<<<<< HEAD
 where $i$ denotes the selected individual and the summation is taken over all possible values of $x_{Li}$.
 Given the 
+=======
+where $i$ denotes the selected individual and the summation is taken over all possible values of $x_{L}$. 
+>>>>>>> 6efd283e9ca98f1b9878c05706610f9c287ed92f
 
 
+From Eqn.~\ref{lapdist}
+\begin{align}
+P\left(g_i>g_c \right) =
+\frac{1}{2}\exp{\left[1/\sigma - \ln\chi  \left(\frac{1}{2}-x_L\right)\right] }.%&\mbox{if } \\
+%1-\frac{1}{2}\exp{\left[-1/\sigma + \ln\chi  \left(\frac{1}{2}-x_L\right)\right] }&\mbox{if } 
+%\end{cases}
+\end{align}
+(This expression is true if $x_L \le 1/2 - 1/(\sigma\ln\chi)$. As we are interested in these probabilities only when $x$ is small we restrict our attention to this scenario.) Given this equation we may write Eqn.~\ref{up} as
+\begin{equation}
+t^+(x) = (1-x)  e^{1/\sigma } \mathcal{F}(x)
+\end{equation}
+where 
+\begin{equation}
+ \mathcal{F}(x) = \frac{1}{2}\sum_{x_{L}}\exp{\left[ - \ln\chi  \left(\frac{1}{2}-x_L\right)\right]}P\left(x_{L}|x\right)
+\end{equation}
+and similarly 
+\begin{equation}
+%t^+(x) = P(S_i=-1)\sum_{j=0}^{N_s}P\left(g_i>g_c(j/N_s)\right)P\left(x_L=j/N_s|x\right)
+t^-(x) =x \left(1-  e^{1/\sigma } \mathcal{F}(x)\right)
+\end{equation}
+Taking the derivative of Eqn.~\ref{laplace_cost} and employing a Maclaurin series expansion leaves
+\begin{equation}
+  \frac{d \ln \tau}{d \sigma} \approx - N \sigma^{-2} \int_{x_1}^{x_2} \left(1 + \sum_{n=1}^{\infty} \left(e^{1/\sigma } \mathcal{F}(y)\right)^n  \right) dy
+\label{laplace_cost2}
+\end{equation}
+The extrema of the potential, $x_1,x_2$, are at the points where $t^+(x)=t^-(x)$, i.e. where $x=e^{1/\sigma } \mathcal{F}(x)$. Since $e^{1/\sigma } \mathcal{F}(x)<x$ $\forall x \in [x_1,x_2]$ the summation terms in the integrand are all strictly less than $x$, hence
+\begin{equation}
+  \frac{d \ln \tau}{d \sigma} \approx - N \sigma^{-2} \left({x_2}-{x_1}\right) + \mathcal{O}\left( \left(x_2-x_1\right)^2\right)
+\label{laplace_cost2}
+\end{equation}
+%\begin{align}
+%P\left(g_i>g_c \right) =
+%1 - \frac{1}{2}\exp{\left[-1/\sigma + \ln\chi  \left(\frac{1}{2}-x_L\right)\right] }%&\mbox{if } \\
+%%1-\frac{1}{2}\exp{\left[-1/\sigma + \ln\chi  \left(\frac{1}{2}-x_L\right)\right] }&\mbox{if } 
+%%\end{cases}
+%\end{align}
+%otherwise.
 
 %\bibliographystyle{model1-num-names}
 %\bibliographystyle{apalike}
