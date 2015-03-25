@@ -67,7 +67,7 @@ We aim to assess optimal strategies assuming some cost associated with reducing 
 Minimizing Eqn.~\ref{cost} means the optimal level of $\sigma$ is one for which
 \begin{equation}
   \frac{d \ln \tau}{d \sigma} = N \beta \sigma^{-2}
-  \label{cost1}
+  \label{cost_1}
 \end{equation}
 %\begin{figure*}
 %\centering
@@ -144,6 +144,7 @@ t^+(x) = (1-x)  e^{1/\sigma } \mathcal{F}(x)
 where 
 \begin{equation}
  \mathcal{F}(x) = \frac{1}{2}\sum_{x_{L}}\exp{\left[ - \ln\chi  \left(\frac{1}{2}-x_L\right)\right]}P\left(x_{L}|x\right)
+ \label{social}
 \end{equation}
 and similarly 
 \begin{equation}
@@ -160,13 +161,47 @@ The extrema of the potential, $x_1,x_2$, are at the points where $t^+(x)=t^-(x)$
   \frac{d \ln \tau}{d \sigma} \approx  N \sigma^{-2} \left({x_2}-{x_1}\right) + \mathcal{O}\left( \left(x_2-x_1\right)^2\right)
 \label{laplace_cost2}
 \end{equation}
-Combining Eqns.~\ref{cost1} and~\ref{laplace_cost2} gives the location of minimal cost as
+Combining Eqns.~\ref{cost_1} and~\ref{laplace_cost2} gives the location of minimal cost as
 \begin{equation}
   \beta =  \left({x_2}-{x_1}\right) 
 \label{laplace_cost_final}
 \end{equation}
 where in deriving this expression we have neglected terms of $\mathcal{O}(1/N)$ and $\mathcal{O}\left( \left(x_2-x_1\right)^2\right)$
 Optimal strategy is therefore achieved by setting $\sigma$ so that the difference between the two extrema is equal to $\beta$.
+
+Numerical calculations of $x_2-x_1$ and the optimal strategy are shown in Fig.~\ref{figx2x1}. More intuition into the underlying processes that control the distance between the inflexion points may be attained by performing an expansion of the social information, $\mathcal{F}(x)$, in terms of the moments of the sampling process. Taylor expanding the inner term %$\exp{\left[ - \ln\chi  \left(\frac{1}{2}-x_L\right)\right]}$ 
+of Eqn.~\ref{social} around $x_L=x$ leads to % allows us to replace the summation over all values of $x_L$ with its mean and variance, i.e.
+\begin{equation}
+\mathcal{F}(x) = \frac{1}{2}\exp{\left[ - \ln\chi  \left(\frac{1}{2}-x\right)\right]} \left( 1 + \frac{ \ln(\chi)^2}{2}\mbox{Var}(x_L) \right)
+\end{equation}
+Effectively this equation approximates the process of observing a restricted subset of the population. The observations of opinions of neighbors represents an estimate, $x_L$, of the true population average opinion, $x$. This random process of observations may be approximated in terms of the mean and variance of the sampling. While the underlying network structure is complex and non-Markovian, it may be modelled as correlated binomial, in essence we model the process as sampling with pairwise correlation, when there is transitivity near-neighbors are likely to have copied one another hence opinions will be clustered. Following ~\cite{witt2004moody}, the variance of a correlated binomial is
+\begin{equation}
+\mbox{Var}(x_L) = x(1-x)\left( \rho + \frac{1-\rho}{N_s} \right)
+\end{equation}
+where $\rho$ is the pairwise correlation coefficient. Assuming the network structure and conformity create a positive correlation of opinions amongst neighbors, then we may define an increased likelihood that neighbor $j$ is in state $S_j=1$, given $S_k=1$, so that
+\begin{equation}
+P(S_j=1|S_k=1) = x(1+\alpha)
+\end{equation}
+where $\alpha$ is determined by the transitivity (probability $k$ is in the neighborhood of $j$) and conformity. This means 
+\begin{equation}
+\rho = \frac{x\alpha}{1-x}
+\end{equation}
+and
+\begin{align}
+\mathcal{F}(x) &= \frac{1}{2}\exp{\left[ -  \ln\chi  \left(\frac{1}{2}-x\right)\right]} \times \nonumber \\ & \left( 1 + \frac{ \ln(\chi)^2}{2}\left(\frac{x(1-x(1+\alpha))}{N_s} +  \alpha x^2  \right)   \right).
+\end{align}
+Solutions to $\mathcal{F}(x)=x$ may be constructed with a perturbation method, with small parameters $\alpha$ and $1/N_s$. We begin with 
+\begin{equation}
+x_1 \sim x^0_1 + \alpha x^1_1 + 1/N_s x^2_1
+\end{equation}
+The zeroth order solution is for the mean field where there is no clustering and no noise in the sampling process, hence
+\begin{align}
+x^0  = \frac{1}{2}\exp{\left[ 1/\sigma -  \ln\chi  \left(\frac{1}{2}-x^0\right)\right]} 
+\end{align}
+For small x
+\begin{equation}
+x^0_1 = \frac{1}{\exp{\left[ 1/\sigma -  \ln\chi  \left(\frac{1}{2}\right)\right]}  - \ln\chi}
+\end{equation}
 %\begin{align}
 %P\left(g_i>g_c \right) =
 %1 - \frac{1}{2}\exp{\left[-1/\sigma + \ln\chi  \left(\frac{1}{2}-x_L\right)\right] }%&\mbox{if } \\
