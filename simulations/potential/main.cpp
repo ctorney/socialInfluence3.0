@@ -11,11 +11,11 @@ int main()
     int numBlocks = 512;
 
     // number of individuals in a group
-    int N = 128;
+    int N = 64;
     int N_ALL = N * numBlocks;
 
     // number of social observations
-    int Ns = 8;
+    int Ns = 18;
 
     // *********************************
     //      declare host variables
@@ -74,7 +74,7 @@ int main()
             CUDA_CALL(cudaMemset (d_down, 0, sizeof(float) * (N + 1)));
             CUDA_CALL(cudaMemset (d_upcount, 0, sizeof(int) * (N + 1)));
 
-            float cluster = 0.65;
+            float cluster = 0.85;
             generateNetworkSW(h_net, numBlocks, N, Ns, cluster,r);
 //           return 0;
 
@@ -87,7 +87,7 @@ int main()
             }*/
             CUDA_CALL(cudaMemcpy (d_net, h_net, (N_ALL*Ns) * sizeof(int), cudaMemcpyHostToDevice));
 
-            float sigma = 20.0 + 0.5 * float(G);
+            float sigma = 5.5 + 0.5 * float(G);
             char fileName[300];
             sprintf(fileName, "../output/potential%f-%f.npy", sigma, cluster);
 
