@@ -200,8 +200,13 @@ x^0  = \frac{1}{2}\exp{\left[ 1/\sigma -  \ln\chi  \left(\frac{1}{2}-x^0\right)\
 \end{align}
 For small x
 \begin{equation}
-x^0_1 = \frac{1}{\exp{\left[ 1/\sigma -  \ln\chi  \left(\frac{1}{2}\right)\right]}  - \ln\chi}
+x^0_1 = \frac{1}{2\sqrt{\chi}(1-1/\sigma) -  \ln\chi}
 \end{equation}
+For x close to 0.5 we make use of the fact that $\ln(2x) \sim 2(x-\frac{1}{2})$
+\begin{equation}
+x^0_2 = \frac{1+1/\sigma - \ln\chi/2 }{2 -  \ln\chi}
+\end{equation}
+
 %\begin{align}
 %P\left(g_i>g_c \right) =
 %1 - \frac{1}{2}\exp{\left[-1/\sigma + \ln\chi  \left(\frac{1}{2}-x_L\right)\right] }%&\mbox{if } \\

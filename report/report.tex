@@ -42,19 +42,19 @@ Each individual, $i$, holds an opinion $S_i \in \{ -1,1\}$ that is observable by
 \end{equation}
 where $\mathcal{N}_i$ defines the social interaction neighborhood. To impose a decision rule as a function of $g_i$ we rearrange Eqn.~\ref{opt_sol1} using Bayes' rule, assume individuals place equal weighting on the opinions of neighbors, that they know the level of noise in the environmental cue, and that it is symmetric around zero. Eqn.~\ref{opt_sol1} may then be written as,
 \begin{equation}
-\frac{\exp{ \left( - \frac{\vert g_i -  \infty \vert}{\sigma} \right)}}{\exp{ \left( - \frac{\vert g_i + \infty \vert}{\sigma} \right)}} > \chi^{1-2x_L}.
+\frac{\exp{ \left( - \frac{\vert g_i -  \infty \vert}{\sigma} \right)}}{\exp{ \left( - \frac{\vert g_i + \infty \vert}{\sigma} \right)}} > \omega^{1-2x_L}.
 \label{rule}
 \end{equation}
-Here we have denoted the fraction of neighbors an individual observes in the state $S=1$ as $x_L$, used $\pm \infty$ as estimates of the actual value of $G$ (these will cancel), and introduced a social weighting variable $\chi$ which may be interpreted as the belief that a single neighbor is correct rescaled by the neighborhood size. This rescaling means decisions are based on the fraction of neighbors that are correct in the local neighborhood and not the absolute number, ensuring a comparison can be made between social networks with varying average degree.
+Here we have denoted the fraction of neighbors an individual observes in the state $S=1$ as $x_L$, used $\pm \infty$ as estimates of the actual value of $G$ (these will cancel), and introduced a social weighting variable $\omega$ which may be interpreted as the belief that a single neighbor is correct rescaled by the neighborhood size. This rescaling means decisions are based on the fraction of neighbors that are correct in the local neighborhood and not the absolute number, ensuring a comparison can be made between social networks with varying average degree.
 
 Rearranging Eqn.~\ref{rule} leads to a decision rule such that individual $i$ will adopt the opinion $S_i = 1$ iff
 \begin{equation}
-g_i >  \sigma\ln\chi  \left(\frac{1}{2}-x_L\right) 
+g_i >  \sigma\ln\omega  \left(\frac{1}{2}-x_L\right) 
 \label{opt_rule}
 \end{equation}
 
 
-%, i.e. $\chi = P(S_j=\mbox{sign}(G))^{\vert \mathcal{N}_i \vert }$  the and denote the fraction of neighbors an individual observes in the state $S=1$ as $x_L$. Then the decision rule for the focal individual is to switch to the state $1$ if
+%, i.e. $\omega = P(S_j=\mbox{sign}(G))^{\vert \mathcal{N}_i \vert }$  the and denote the fraction of neighbors an individual observes in the state $S=1$ as $x_L$. Then the decision rule for the focal individual is to switch to the state $1$ if
 
 
 We simulate the model and investigate how influencing the system by altering $\sigma$ is impacted by the size and structure of the interaction network. We begin by assuming all individuals are in the incorrect state, i.e. $S=-1$ and $G=1$, and examine the time to escape this state, denoted $\tau$. Key variables are the transitivity and degree of the social network.
@@ -71,7 +71,7 @@ N^{-1} \frac{d \ln \tau}{d \sigma} = \beta \sigma^{-2}
 \begin{figure*}
 \centering
 \includegraphics[scale=0.4]{figures/fig-chi.eps} 
-\caption{Probability to transition as a function of local neighbourhood for different values of the sociality weighting $\chi$}
+\caption{Probability to transition as a function of local neighbourhood for different values of the sociality weighting $\omega$}
 \label{fig1}
 \end{figure*}
 We need to find $\tau$.
@@ -115,7 +115,7 @@ N^{-1}  \frac{d \ln \tau}{d \sigma} \approx -\int_{x_1}^{x_2} \frac{\partial}{\p
 The dynamics of an update step in stochastic decision process are as follows; first an individual is selected at random from the population, this individual has a personal estimate of the environmental cue $g_i$ and observes the opinions of all its neighbors. The decision rule of Eqn.~\ref{opt_rule} is then employed and the individual will adopt, or remain in, the state most likely to be correct.
 For any value of social information $x_L$ there is a value of personal information above which the individual will switch to $S=1$. We denote this value as $g_c$ and from Eqn.~\ref{opt_rule} 
 \begin{equation}
-g_c(x_L) = \sigma\ln\chi  \left(\frac{1}{2}-x_L\right) 
+g_c(x_L) = \sigma\ln\omega  \left(\frac{1}{2}-x_L\right) 
 \end{equation}
 If $g_i>g_c$ then the individual will switch to $S=1$ otherwise $S=-1$. 
 Dealing first with the transition rate toward the correct state, we may write this as
