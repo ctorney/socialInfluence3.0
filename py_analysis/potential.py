@@ -20,7 +20,7 @@ from matplotlib import colors
 from numpy import *
 
 fig = plt.figure(figsize=(8, 6)) 
-gs = gridspec.GridSpec(1, 2, width_ratios=[1,1]) 
+gs = gridspec.GridSpec(2, 2, width_ratios=[1,1]) 
 ax0 = plt.subplot(gs[0])
 ax1 = plt.subplot(gs[1])
 
@@ -71,15 +71,19 @@ atimes2 = np.zeros(numA)
 alpha = 0.0
 sigma = 20.0
 dx = 1/float(NA)
+sigma = 12.0
+dx = 1/128.0
 ups = [atup(x+dx,sigma) for x in arange(0,1,dx)]
 downs = [atdown(x+dx,sigma) for x in arange(0,1,dx)]
 pot=-np.log(np.divide(ups,downs).astype(float32))
 pot=np.cumsum(pot)
+pot[127]=0.0;
 ax0.plot(arange(0,1,dx),pot ,   color = cls[1],linestyle='-')
 #for p in pot: print p
 
 
-alpha = 0.3160
+alpha = 0.00
+sigma = 50.0
 ups = [atup(x+dx,sigma) for x in arange(0,1,dx)]
 downs = [atdown(x+dx,sigma) for x in arange(0,1,dx)]
 pot=-np.log(np.divide(ups,downs).astype(float32))
@@ -92,6 +96,9 @@ pot=-np.log(np.divide(ups,downs).astype(float32))
 pot=np.cumsum(pot)
 #for p in pot: print p
 ax0.plot(arange(0,1,dx),pot ,   color = cls[1],linestyle='-')
+pot[127]=0.0;
+#for p in pot: print p
+ax1.plot(arange(0,1,dx),pot ,   color = cls[1],linestyle='-')
     
         
             #if (j%4==0):
@@ -109,10 +116,12 @@ l=ax0.legend(loc=1,     ncol=1, borderaxespad=0.5, prop={'size':12})
 #l.get_title().set_fontproperties({'size':12}) 
 ax0.axis([0.0,1.0, -25, 8])
 ax1.axis([0.0, 1.0, -15, 8])
+ax0.axis([0.0,1.0, -25, 0])
+ax1.axis([0.0, 1.0, -25, 0])
 #ax0.set_yscale('log')
 ax1.get_yaxis().set_visible(False)
-ax0.set_title('small network')
-ax1.set_title('large network')
+#ax0.set_title('small network')
+#ax1.set_title('large network')
 ax0.set_ylabel('potential')  
 
 #fig.text(0.5, 0.04, 'fraction of population correct', ha='center', va='center')

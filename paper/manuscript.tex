@@ -15,7 +15,7 @@
 \begin{document}
 %\begin{frontmatter}
 %\preprint{}
-\title{Optimal strategies of influence in structured populations}
+\title{Optimal strategies of influence in structured social groups}
 \author{Colin J. Torney}
 \affiliation{Centre for Mathematics \& the Environment, University of Exeter, Penryn Campus, Cornwall, UK}
 %\affiliation{Department of Ecology \& Evolutionary Biology, Princeton University, \\Princeton, New Jersey 08544}
@@ -35,7 +35,27 @@ P(g_i) = \frac{1}{2\sigma} \exp{ \left( - \frac{\vert g_i - G \vert}{\sigma} \ri
 \end{equation}
 (This distribution is chosen for analytical tractability, but equivalent results may be attained for other symmetric distributions, e.g. Gaussian.)
 
-Each individual, $i$, holds an opinion $S_i \in \{ -1,1\}$ that is observable by others in its local neighborhood and is correct when $S_i = \mbox{sign}(G)$. Individuals update their states based on social and personal information and a Bayesian decision rule \cite{nitzan1982optimal,perez2011collective, Perreault, torney2015} is employed. This means that an individual will switch to the state that is the most likely to be correct, given all available information. Formally, individual $i$ will adopt the state $S_i=1$ if
+
+
+Each individual, $i$, holds an opinion $S_i \in \{ -1,1\}$ that is observable by others in its local neighborhood and is correct when $S_i = \mbox{sign}(G)$. Individuals update their states based on social and personal information. The two information sources are combined such that individual $i$ will adopt the opinion $S_i = 1$ iff
+\begin{equation}
+\frac{g_i}{\sigma} >  \chi  \left(\frac{1}{2}-x_L\right) 
+\label{opt_rule}
+\end{equation}
+where $x_L$ is the fraction of neighbors with the state $S = 1$ in the local (observable) neighborhood of individual $i$, and $\chi$ is a parameter that determines the weighting individuals give to social information. 
+
+While we omit the derivation here the rule defined by Eqn.~\ref{opt_rule} is optimal under certain assumptions\cite{nitzan1982optimal,torney2015}, namely that individuals are aware of the noise in their personal estimate, have a constant level of confidence that neighbors are correct, and assume that the opinions of their neighbors are independent. The result of Eqn.~\ref{opt_rule} is that the probability of an individual switching to the state $S_i = 1$ is a sigmoidal function of the fraction of local neighbors in that state, with the steepness of the transition determined by the values of $\chi$ and $\sigma$ (see Fig~\ref{figSwitch} for a plot of this function).
+
+plot of function
+
+show escape time depends on network structure and clustering
+
+escape time can be predicted if rho is known at the minima 
+
+optimal strategy of influence if there's a cost for reducing sigma
+
+
+and a Bayesian decision rule \cite{nitzan1982optimal,perez2011collective, Perreault, torney2015} is employed. This means that an individual will switch to the state that is the most likely to be correct, given all available information. Formally, individual $i$ will adopt the state $S_i=1$ if
 \begin{equation}
  P\left(G \ge 0\big| g_i, \mathbf{S}_{j\in \mathcal{N}_i}\right)  > P\left(G < 0\big| g_i, \mathbf{S}_{j\in \mathcal{N}_i}\right)
 \label{opt_sol1}
@@ -47,12 +67,7 @@ where $\mathcal{N}_i$ defines the social interaction neighborhood. To impose a d
 \end{equation}
 Here we have denoted the fraction of neighbors an individual observes in the state $S=1$ as $x_L$, used $\pm \infty$ as estimates of the actual value of $G$ (these will cancel), and introduced a social weighting variable $\chi$ which may be interpreted as the belief that a single neighbor is correct rescaled by the neighborhood size. This rescaling means decisions are based on the fraction of neighbors that are correct in the local neighborhood and not the absolute number, ensuring a comparison can be made between social networks with varying average degree.
 
-Rearranging Eqn.~\ref{rule} leads to a decision rule such that individual $i$ will adopt the opinion $S_i = 1$ iff
-\begin{equation}
-g_i >  \sigma\ln\chi  \left(\frac{1}{2}-x_L\right) 
-\label{opt_rule}
-\end{equation}
-
+Rearranging Eqn.~\ref{rule} leads to a decision rule such that
 
 %, i.e. $\chi = P(S_j=\mbox{sign}(G))^{\vert \mathcal{N}_i \vert }$  the and denote the fraction of neighbors an individual observes in the state $S=1$ as $x_L$. Then the decision rule for the focal individual is to switch to the state $1$ if
 
@@ -200,8 +215,13 @@ x^0  = \frac{1}{2}\exp{\left[ 1/\sigma -  \ln\chi  \left(\frac{1}{2}-x^0\right)\
 \end{align}
 For small x
 \begin{equation}
-x^0_1 = \frac{1}{\exp{\left[ 1/\sigma -  \ln\chi  \left(\frac{1}{2}\right)\right]}  - \ln\chi}
+x^0_1 = \frac{1}{2\sqrt{\chi}(1-1/\sigma) -  \ln\chi}
 \end{equation}
+For x close to 0.5 we make use of the fact that $\ln(2x) \sim 2(x-\frac{1}{2})$
+\begin{equation}
+x^0_2 = \frac{1+1/\sigma - \ln\chi/2 }{2 -  \ln\chi}
+\end{equation}
+
 %\begin{align}
 %P\left(g_i>g_c \right) =
 %1 - \frac{1}{2}\exp{\left[-1/\sigma + \ln\chi  \left(\frac{1}{2}-x_L\right)\right] }%&\mbox{if } \\
