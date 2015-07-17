@@ -24,8 +24,8 @@ gs = gridspec.GridSpec(1, 2, width_ratios=[1,1])
 ax0 = plt.subplot(gs[0])
 ax1 = plt.subplot(gs[1])
 
-NA = 128
-Ns = 8
+NA = 128*2
+Ns = 50
 K = 50       
 ws = 0.524
 # Set the default color cycle
@@ -57,32 +57,40 @@ def EXTAPPROX(X,sigma):
         return 1.0 - (m.exp(A)*0.5*m.exp((-B*X)))*(1.0 +  VR -  ((VR/(2*m.exp(-(A-B*X))-1.0+VR))*alpha * B * X * (Ns-1)/float(Ns)))
     return m.exp(-A)*0.5*m.exp((B*X))*(1.0 +  VR +  ((VR/(1.0+VR))*alpha * B * X * (Ns-1)/float(Ns)))
 def atup(X,sig):
-    return (1-X)*(EXTSWUP(X,sig))
     return (1-X)*(EXTAPPROX(X,sig))
+def tup(X,sig):
+    return (1-X)*(EXTSWUP(X,sig))
 def atdown(X,sig): 
-    return (X)*(1.0-EXTSWUP(X,sig))
     return (X)*(1.0-EXTAPPROX(X,sig))
+def tdown(X,sig): 
+    return (X)*(1.0-EXTSWUP(X,sig))
 numA = 15
 sigs = np.zeros(numA)
 atimes = np.zeros(numA)
 atimes2 = np.zeros(numA)
 alpha = 0.0
 sigma = 20.0
-dx = 1/128.0
+dx = 1/float(NA)
 ups = [atup(x+dx,sigma) for x in arange(0,1,dx)]
 downs = [atdown(x+dx,sigma) for x in arange(0,1,dx)]
 pot=-np.log(np.divide(ups,downs).astype(float32))
 pot=np.cumsum(pot)
 ax0.plot(arange(0,1,dx),pot ,   color = cls[1],linestyle='-')
-for p in pot: print p
+#for p in pot: print p
 
 
-alpha = 0.22
+alpha = 0.3160
 ups = [atup(x+dx,sigma) for x in arange(0,1,dx)]
 downs = [atdown(x+dx,sigma) for x in arange(0,1,dx)]
 pot=-np.log(np.divide(ups,downs).astype(float32))
 pot=np.cumsum(pot)
 for p in pot: print p
+ax0.plot(arange(0,1,dx),pot ,   color = cls[1],linestyle='-')
+ups = [tup(x+dx,sigma) for x in arange(0,1,dx)]
+downs = [tdown(x+dx,sigma) for x in arange(0,1,dx)]
+pot=-np.log(np.divide(ups,downs).astype(float32))
+pot=np.cumsum(pot)
+#for p in pot: print p
 ax0.plot(arange(0,1,dx),pot ,   color = cls[1],linestyle='-')
     
         
@@ -99,13 +107,14 @@ ax0.plot(arange(0,1,dx),pot ,   color = cls[1],linestyle='-')
 l=ax0.legend(loc=1,     ncol=1, borderaxespad=0.5, prop={'size':12})
 #l.set_title('P', prop={'size':12}) 
 #l.get_title().set_fontproperties({'size':12}) 
-ax0.axis([0.0,1.0, -300, 8])
-ax1.axis([0.0, 1.0, -300, 8])
+ax0.axis([0.0,1.0, -25, 8])
+ax1.axis([0.0, 1.0, -15, 8])
 #ax0.set_yscale('log')
 ax1.get_yaxis().set_visible(False)
 ax0.set_title('small network')
 ax1.set_title('large network')
 ax0.set_ylabel('potential')  
 
-fig.text(0.5, 0.04, 'fraction of population correct', ha='center', va='center')
+#fig.text(0.5, 0.04, 'fraction of population correct', ha='center', va='center')
+plt.show()
 plt.savefig('fig-potential2.png', format='png', dpi=100)

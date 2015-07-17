@@ -27,8 +27,10 @@
 using namespace std;
 using namespace NGraph;
 void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rng* r);
+void generateNetworkSW(int* net, int blocks, int N, int edges, float trans, gsl_rng* r);
 void printGraph(Graph G);
-float cluster_coeff(Graph A, int N);
+float cluster_coeff1(Graph A, int N);
+float cluster_coeff(int* net, int N, int edges);
 float cluster_coeff_v(Graph G, int v);
 int main() 
 {
@@ -54,7 +56,7 @@ int main()
     int N4 = 0.5 * N2;
     int N_ALL = N * numBlocks;
 
-    int Ns = 8;
+    int Ns = 18;
 
     dim3 threadGrid(N);
     curandState *devRands;
@@ -99,7 +101,8 @@ int main()
         sprintf(fileName, "../output/time-%d.npy", int(2.0*NL));
         for (int G=0;G<sigCount;G++)
         {
-            generateNetwork(h_net, numBlocks, N, Ns, 0.2,r);
+            generateNetworkSW(h_net, numBlocks, N, Ns, 0.5,r);
+
              // generate network
             /*for (int b=0;b<numBlocks;b++)
             {
@@ -109,7 +112,7 @@ int main()
             }*/
             CUDA_CALL(cudaMemcpy (d_net, h_net, (N_ALL*Ns) * sizeof(int), cudaMemcpyHostToDevice));
 
-            float sigma = 2.5 + 0.5 * float(G);
+            float sigma = 2.5 + 0.25 * float(G);
 
 
             for (int b=0;b<numBlocks;b++)
@@ -123,6 +126,7 @@ int main()
 
 
 
+            int NESC = int(N * (0.5- 1.0/(sigma*log(chi))) - 1);
 
             for (int t=0;t<maxTime;t++)
             {
@@ -150,7 +154,7 @@ int main()
                     for (int b=0;b<numBlocks;b++)
                     {
  //                       cout<<"block total : "<<h_blockTotals[b]<<endl;
-                        if (h_blockTotals[b]>0.5*N)
+                        if (h_blockTotals[b]>NESC)
                         {
                             if (h_blockTimes[b]<0)
                                 h_blockTimes[b]=t;
@@ -199,7 +203,158 @@ int main()
     }
     return 0;
 }
+void generateNetworkSW(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
+{
+
+    float av_cc = 0.0f;
+    int he = int(0.5*edges);
+    for (int bl=0;bl<blocks;bl++)
+    {
+        int allEdges[N*(edges+1)];
+        for (int i=0;i<N;i++)
+        {
+            allEdges[i*(edges+1)]=edges;
+            for (int j=0;j<he;j++)
+                if (gsl_rng_uniform(r)<trans)
+                allEdges[i*(edges+1)+j+1]= (i-(j+1)) % N ;
+                else
+                allEdges[i*(edges+1)+j+1]= gsl_rng_uniform_int(r,N);
+            for (int j=he;j<edges;j++)
+                if (gsl_rng_uniform(r)<trans)
+                allEdges[i*(edges+1)+j+1]= (i+(j+1-he)) % N ;
+                else
+                allEdges[i*(edges+1)+j+1]= gsl_rng_uniform_int(r,N);
+
+        }
+        av_cc +=cluster_coeff(allEdges,N,edges); 
+        for (int i=0;i<N;i++)
+        {
+         //   cout<<i<<":";
+            for (int j=0;j<edges;j++){
+                net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
+           //     cout<<":"<<net[bl*N*edges + i*edges + j];
+            }
+           // cout<<endl;
+        }
+
+
+
+
+    }
+        cout<<av_cc/float(blocks)<<":";
+}
 void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
+{
+
+    float av_cc = 0.0f;
+    for (int bl=0;bl<blocks;bl++)
+    {
+        int allEdges[N*(edges+1)];
+        for (int i=0;i<N;i++)
+        {
+            allEdges[i*(edges+1)]=0;
+            for (int j=0;j<edges;j++)
+                allEdges[i*(edges+1)+j+1]=-1;
+
+        }
+        int eInds[N*edges];
+        int eList[N*edges];
+        for (int i=0;i<N*edges;i++)
+        {
+            eInds[i]=i;
+            eList[i]=-1;
+        }
+        int tInds[int(0.5*N*edges)];
+        int tList[int(0.5*N*edges)];
+        for (int i=0;i<int(0.5*N*edges);i++)
+        {
+            tInds[i]=i;
+            tList[i]=-1;
+        }
+        gsl_ran_shuffle (r, eInds, int(N*edges), sizeof(int));
+        gsl_ran_shuffle (r, tInds, int(0.5*N*edges), sizeof(int));
+
+        int ce=0;
+        int ct=0;
+        for (int i=0;i<N;i++)
+        {
+            int e = edges;
+            while (e)
+            {
+                if (e==1)
+                {
+                    eList[ce]=i;
+                    e--;
+                    ce++;
+                }
+                else
+                {
+                    float rn = gsl_rng_uniform(r);
+                    if (rn<trans)
+                    {
+                        tList[ct]=i;
+                        e-=2;
+                        ct++;
+                    }
+                    else
+                    {
+                        eList[ce]=i;
+                        e--;
+                        ce++;
+
+                    }
+
+
+                }
+            }
+
+        }
+        // now do all the single edges
+        for (int i=0;i<N*edges;i++)
+        {
+            int v = eList[eInds[i]];
+            if (v<0) continue;
+            allEdges[v*(edges+1)]++;
+            allEdges[v*(edges+1) + allEdges[v*(edges+1)]] = gsl_rng_uniform_int(r,N);
+
+
+        }
+        // next do all the triangles
+        for (int i=0;i<int(0.5*N*edges);i++)
+        {
+            int v = tList[tInds[i]];
+            if (v<0) continue;
+            int n1=gsl_rng_uniform_int(r,N);
+            while (allEdges[n1*(edges+1)]==0)
+                n1=gsl_rng_uniform_int(r,N);
+            int n1c = allEdges[n1*(edges+1)];
+            int n2 = gsl_rng_uniform_int(r,n1c) + 1;
+            n2 = allEdges[n1*(edges+1)+ n2];
+            allEdges[v*(edges+1)]++;
+            allEdges[v*(edges+1) + allEdges[v*(edges+1)]] = n1;
+            allEdges[v*(edges+1)]++;
+            allEdges[v*(edges+1) + allEdges[v*(edges+1)]] = n2;
+
+
+        }
+        av_cc +=cluster_coeff(allEdges,N,edges); 
+        for (int i=0;i<N;i++)
+        {
+            cout<<i<<":";
+            for (int j=0;j<edges;j++){
+                net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
+                cout<<":"<<net[bl*N*edges + i*edges + j];
+            }
+            cout<<endl;
+        }
+
+
+
+
+    }
+        cout<<av_cc/float(blocks)<<endl;
+}
+void generateNetwork2(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
 {
 
     float rn;
@@ -218,7 +373,7 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
 
 
         // add in transitivity
-        float cc = cluster_coeff(G, N);
+        float cc = 0.0f;//cluster_coeff1(G, N);
         int maxIters = 100000;
         while ((cc<trans)&&(maxIters>0))
         {
@@ -295,7 +450,7 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
             G.remove_edge(p2, n2); 
             G.insert_edge(n1, n2);
             G.insert_edge(p2, p1);
-            float cc2 = cluster_coeff(G, N);
+            float cc2 =0.0;// cluster_coeff1(G, N);
             if (cc2<cc)
             {
             G.insert_edge(n1, p1); 
@@ -355,7 +510,33 @@ void printGraph(Graph G)
     cout<<"... done"<<endl;
 }
 
-float cluster_coeff(Graph G, int N) 
+float cluster_coeff(int* net, int N, int edges) 
+{
+    float av_cc = 0.0f;
+    for (int i=0;i<N;i++)
+    {
+        float links = 0.0;
+        for (int j=0;j<edges;j++)
+            for (int k=0;k<edges;k++)
+            {
+                int n1 = net[i*(edges+1)+j+1];
+                int n2 = net[i*(edges+1)+k+1];
+                // does n1 look at n2?
+                for (int l=0;l<edges;l++)
+                    if (n2 == net[n1*(edges+1)+l+1])
+                    {
+                        links+=1.0;
+                        break;
+                    }
+
+            }
+        double e = 1.0 * double(edges);
+        av_cc +=  links / (e * (e-1));
+
+    }
+    return av_cc/float(N);
+}
+float cluster_coeff2(Graph G, int N) 
 {
     float av_cc = 0.0f;
     for ( Graph::const_iterator a = G.begin(); a != G.end(); a++)

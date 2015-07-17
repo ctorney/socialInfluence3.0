@@ -50,7 +50,7 @@ numA = 15
 sigs = np.zeros(numA)
 atimes = np.zeros(numA)
 atimes2 = np.zeros(numA)
-alpha = 0.279
+alpha = 0.30
 for acount in range(numA):
     
     sigma  = 2.5+0.5*float(acount)
