@@ -34,7 +34,8 @@ def tdown(X,sig):
 def EXTAPPROX(X,sig):  
     A = np.log(K)/(2.0) - 1/sig
     B = np.log(K)
-    VR = 0.5*B**2*X*(1-X)*(       alpha  + ((1.0-alpha)/float(Ns)) )
+    rho = alpha*X/(1.0-X)
+    VR = 0.5*B**2*X*(1-X)*(       rho  + ((1.0-rho)/float(Ns)) )
     return m.exp(-A)*0.5*m.exp((B*X))*(1.0 +  VR)
 def EXTAPPROX0(X,sig):  
     A = np.log(K)/(2.0)# - 1/sig
@@ -52,7 +53,7 @@ atimes = np.zeros(numA)
 atimes2 = np.zeros(numA)
 alpha = 0.0
 for acount in range(numA):
-    alpha = 0.20-0.01*float(acount)
+    alpha = 0.0+0.05*float(acount)
     sigma  = 4.0#2.0+0.25*float(acount)
     sigs[acount]=alpha#sigma#np.sqrt(sigma)
     
