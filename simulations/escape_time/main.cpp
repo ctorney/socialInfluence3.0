@@ -10,7 +10,6 @@
 #include <curand_kernel.h>
 #include <iostream>
 #include <algorithm>
-#include <ngraph.hpp>
 #include <time.h>
 #include "cuda_call.h"
 #include "switcherKernel.h"
@@ -25,13 +24,9 @@
 #endif
 
 using namespace std;
-using namespace NGraph;
 void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rng* r);
 void generateNetworkSW(int* net, int blocks, int N, int edges, float trans, gsl_rng* r);
-void printGraph(Graph G);
-float cluster_coeff1(Graph A, int N);
 float cluster_coeff(int* net, int N, int edges);
-float cluster_coeff_v(Graph G, int v);
 int main() 
 {
 
@@ -51,12 +46,12 @@ int main()
     // number of reps
     int numBlocks = 256;
     // length of grid
-    int N = 64;
+    int N = 256;
     int N2 = 0.5 * N;
     int N4 = 0.5 * N2;
     int N_ALL = N * numBlocks;
 
-    int Ns = 18;
+    int Ns = 20;
 
     dim3 threadGrid(N);
     curandState *devRands;
@@ -81,7 +76,7 @@ int main()
     int* h_states = new int[N_ALL];
     int* h_blockTotals = new int[numBlocks];
     int* h_blockTimes = new int[numBlocks];
-    int sigCount = 15;
+    int sigCount = 20;
 
     const unsigned int shape[] = {sigCount,2};
 
@@ -95,13 +90,16 @@ int main()
             results[i]=0.0f;
 
 
-        cout<<"~~~~~~~~~~~~~~~~~~"<<endl<<NL<<endl<<"~~~~~~~~~~~~~~~~~~"<<endl;
+        float sigma = 5.0;//2.5 + 0.25 * float(G);
+        cout<<"#~~~~~~~~~~~~~~~~~~"<<endl<<"#sigma "<<sigma<<"Ns "<<Ns<<" chi "<<chi<<endl<<"#~~~~~~~~~~~~~~~~~~"<<endl;
 
         char fileName[30];
-        sprintf(fileName, "../output/time-%d.npy", int(2.0*NL));
+        sprintf(fileName, "./output/time-%d.npy", int(2.0*NL));
         for (int G=0;G<sigCount;G++)
         {
-            generateNetworkSW(h_net, numBlocks, N, Ns, 0.5,r);
+            float alpha  = 1.0-0.05 * float(G);
+            //generateNetworkSW(h_net, numBlocks, N, Ns, alpha, r);
+            generateNetwork(h_net, numBlocks, N, Ns, alpha, r);
 
              // generate network
             /*for (int b=0;b<numBlocks;b++)
@@ -112,12 +110,12 @@ int main()
             }*/
             CUDA_CALL(cudaMemcpy (d_net, h_net, (N_ALL*Ns) * sizeof(int), cudaMemcpyHostToDevice));
 
-            float sigma = 2.5 + 0.25 * float(G);
+ //           float sigma = 2.0 + 0.25 * float(G);
 
 
             for (int b=0;b<numBlocks;b++)
                 h_blockTimes[b] = -1;
-            int maxTime = 10000000;
+            int maxTime = 100000000;
             int checkTime = 1;
 
 
@@ -126,7 +124,7 @@ int main()
 
 
 
-            int NESC = int(N * (0.5- 1.0/(sigma*log(chi))) - 1);
+            int NESC = int(N * (0.5- 1.0/(sigma*(chi))) - 1);
 
             for (int t=0;t<maxTime;t++)
             {
@@ -146,14 +144,12 @@ int main()
 #endif
                 if (t%checkTime == 0 ) 
                 {
-   //                 cout<<t<<endl;
                     countStates(N, numBlocks, d_states, d_blockTotals, N_ALL);
 
                     CUDA_CALL(cudaMemcpy(h_blockTotals, d_blockTotals, (numBlocks) * sizeof(int), cudaMemcpyDeviceToHost));
                     bool allDone = true;
                     for (int b=0;b<numBlocks;b++)
                     {
- //                       cout<<"block total : "<<h_blockTotals[b]<<endl;
                         if (h_blockTotals[b]>NESC)
                         {
                             if (h_blockTimes[b]<0)
@@ -186,7 +182,7 @@ int main()
                     avTime += (float)h_blockTimes[b];
                     count++;
                 }
-            results[G*2] =sigma;
+            results[G*2] = alpha;
             if (count>0)
                 results[G*2+1] = avTime/(float)count;
             else
@@ -195,7 +191,7 @@ int main()
                 checkTime = checkTime * 10;
             if (checkTime > 10000)
                 checkTime = 10000;
-            checkTime = 10;
+ //           checkTime = 10;
 
             cout<<results[G*2]<<" "<<results[G*2+1]<<endl;
             cnpy::npy_save(fileName,results,shape,2,"w");
@@ -232,6 +228,8 @@ void generateNetworkSW(int* net, int blocks, int N, int edges, float trans, gsl_
          //   cout<<i<<":";
             for (int j=0;j<edges;j++){
                 net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
+                if (net[bl*N*edges + i*edges + j]<0)
+                    net[bl*N*edges + i*edges + j]+=N;
            //     cout<<":"<<net[bl*N*edges + i*edges + j];
             }
            // cout<<endl;
@@ -241,11 +239,12 @@ void generateNetworkSW(int* net, int blocks, int N, int edges, float trans, gsl_
 
 
     }
-        cout<<av_cc/float(blocks)<<":";
+ //       cout<<av_cc/float(blocks)<<":";
 }
-void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
+void generateNetworkNEWMAN(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
 {
 
+    // from Newman's paper
     float av_cc = 0.0f;
     for (int bl=0;bl<blocks;bl++)
     {
@@ -279,7 +278,7 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
         for (int i=0;i<N;i++)
         {
             int e = edges;
-            while (e)
+            while (e>0)
             {
                 if (e==1)
                 {
@@ -309,6 +308,15 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
             }
 
         }
+        // we need to have a least a couple of edges to start off with
+        if (ce==0)
+        {
+            int nct = gsl_rng_uniform_int(r,ct);
+            int i = tList[nct];
+            tList[nct] = -1;
+            eList[0] = i;
+            eList[1] = i;
+        }
         // now do all the single edges
         for (int i=0;i<N*edges;i++)
         {
@@ -326,7 +334,12 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
             if (v<0) continue;
             int n1=gsl_rng_uniform_int(r,N);
             while (allEdges[n1*(edges+1)]==0)
-                n1=gsl_rng_uniform_int(r,N);
+            {
+                n1++;
+                if (n1==N)
+                    n1=0;
+ //               n1=gsl_rng_uniform_int(r,N);
+            }
             int n1c = allEdges[n1*(edges+1)];
             int n2 = gsl_rng_uniform_int(r,n1c) + 1;
             n2 = allEdges[n1*(edges+1)+ n2];
@@ -340,176 +353,146 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
         av_cc +=cluster_coeff(allEdges,N,edges); 
         for (int i=0;i<N;i++)
         {
-            cout<<i<<":";
+         //   cout<<i<<":";
             for (int j=0;j<edges;j++){
                 net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
-                cout<<":"<<net[bl*N*edges + i*edges + j];
+           //     cout<<":"<<net[bl*N*edges + i*edges + j];
             }
-            cout<<endl;
+//            cout<<endl;
         }
 
 
 
 
     }
-        cout<<av_cc/float(blocks)<<endl;
+        cout<<av_cc/float(blocks)<<":";
 }
-void generateNetwork2(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
+void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
 {
 
-    float rn;
+//Jennifer Badham and Rob Stocker (2010)
+//A Spatial Approach to Network Generation for Three Properties: Degree Distribution, Clustering Coefficient and Degree Assortativity
+    float av_cc = 0.0f;
+    int he = int(0.5*edges);
+    int nx = powf(float(N),0.5);
+    int neigh[8][2] = { { 1, 1 }, { 1, 0 }, { 1, -1 } , { 0, 1 }, { 0, -1 }, { -1, -1 } , { -1, 0 }, { -1, 1 } };
     for (int bl=0;bl<blocks;bl++)
     {
-        Graph G;
-        // create a random network
+        int allEdges[N*(edges+1)];
+        for (int ix=0;ix<nx;ix++)
+        for (int iy=0;iy<nx;iy++)
+        {
+            int i = ix*nx + iy;
+            int asigned[nx][nx];
+            for (int iix=0;iix<nx;iix++)
+                for (int iiy=0;iiy<nx;iiy++)
+                    asigned[iix][iiy]=0;
+            asigned[ix][iy]=1;
+
+            allEdges[i*(edges+1)]=0;//edges;
+            int j = 1;
+            int offx=0;
+            int offy=0;
+            while (allEdges[i*(edges+1)]<edges)
+            {
+                float move = gsl_rng_uniform(r);
+                if (move<0.5)
+                {
+                    if (move<0.25)
+                        offx++;
+                    else
+                        offx--;
+                }
+                else
+                {
+                    if (move<0.75)
+                        offy++;
+                    else
+                        offy--;
+                }
+ //            cout<<i<<" "<<(allEdges[i*(edges+1)])<<endl;
+                int jx = (ix+offx)%nx;
+                int jy = (iy+offy)%nx;
+
+                if ((gsl_rng_uniform(r)<trans)&(asigned[jx][jy]==0))
+                {
+                    asigned[jx][jy]=1;
+                    allEdges[i*(edges+1)]++;
+                    int nj = jx*nx + jy;
+                    allEdges[i*(edges+1) + allEdges[i*(edges+1)]]= nj;
+                }
+            }
+
+        }
+        av_cc +=cluster_coeff(allEdges,N,edges); 
         for (int i=0;i<N;i++)
-    //        for (int k=0;k<edges;k++)
-            while (G.out_neighbors(i).size()<edges)
-            {
-                int j = gsl_rng_uniform_int(r,N);
-                G.insert_edge_noloop(i, j);
-      //          G.insert_edge(i, j);
-            }
-
-
-        // add in transitivity
-        float cc = 0.0f;//cluster_coeff1(G, N);
-        int maxIters = 100000;
-        while ((cc<trans)&&(maxIters>0))
         {
-            maxIters--;
-            int v = gsl_rng_uniform_int(r,N);
-            Graph::vertex_set vSo = G.out_neighbors(v);
-            Graph::vertex_set::const_iterator iter = vSo.begin(); 
-            rn = gsl_rng_uniform_int(r,edges);
-            advance(iter,rn);
-            int n1=*iter;
-            int n2=n1;
-            while (n1==n2)
-            {
-                iter = vSo.begin(); 
-                rn = gsl_rng_uniform_int(r,edges);
-                advance(iter,rn);
-                n2=*iter;
+ //           cout<<i<<":";
+            for (int j=0;j<edges;j++){
+                net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
+                if (net[bl*N*edges + i*edges + j]<0)
+                    net[bl*N*edges + i*edges + j]+=N;
+   //             cout<<":"<<net[bl*N*edges + i*edges + j];
             }
-            if (G.includes_edge(n1,n2))
-                continue;
-            // now pick a neighbour of n1 at random
-            Graph::vertex_set n1So = G.out_neighbors(n1);
-            iter = n1So.begin(); 
-            rn = gsl_rng_uniform_int(r,edges);
-            advance(iter,rn);
-            int p1=*iter;
-            while (p1==v)
-            {
-                iter = n1So.begin(); 
-                rn = gsl_rng_uniform_int(r,edges);
-                advance(iter,rn);
-                p1=*iter;
-
-            }
-            // now pick an in-neighbour of n2 at random
-            Graph::vertex_set n2Si = G.in_neighbors(n2);
-            iter = n2Si.begin(); 
-            int sz = G.in_neighbors(n2).size();
-            if (sz<2)
-                continue;
-            rn = gsl_rng_uniform_int(r,sz);
-            advance(iter,rn);
-            int p2=*iter;
-            while (p2==v)
-            {
-                iter = n2Si.begin(); 
-                rn = gsl_rng_uniform_int(r,sz);
-                advance(iter,rn);
-                p2 = *iter;
-
-            }
-            if (p1==p2)
-                continue;
-            if (G.includes_edge(p2, p1))
-                continue;
-
-
-            bool reduceCC = false;
-            Graph::vertex_set n1Si = G.in_neighbors(n1);
-            for (Graph::vertex_set::const_iterator b = n1Si.begin(); b !=n1Si.end(); b++)
-                if (G.includes_edge(G.node(b),p1))
-                    if (cluster_coeff_v(G,G.node(b))>cc)
-                        reduceCC = true;
-
-            if (reduceCC) continue;
-            for (Graph::vertex_set::const_iterator b = n2Si.begin(); b !=n2Si.end(); b++)
-                if (G.includes_edge(G.node(b),p2))
-                    if (cluster_coeff_v(G,G.node(b))>cc)
-                        reduceCC = true;
-
-            if (reduceCC) continue;
-
-            G.remove_edge(n1, p1); 
-            G.remove_edge(p2, n2); 
-            G.insert_edge(n1, n2);
-            G.insert_edge(p2, p1);
-            float cc2 =0.0;// cluster_coeff1(G, N);
-            if (cc2<cc)
-            {
-            G.insert_edge(n1, p1); 
-            G.insert_edge(p2, n2); 
-            G.remove_edge(n1, n2);
-            G.remove_edge(p2, p1);
-
-            }
-            else
-                cc=cc2;
-  //          cout<<blocks<<":"<<bl<<":"<<cc<<endl;
-
-
-            //               net[b*N*edges + i*edges + j++] = *t;
+     //       cout<<endl;
         }
 
-        // save to a list
-        for ( Graph::const_iterator p = G.begin(); p != G.end(); p++)
-        {
 
-            int j = 0;
-            int i = G.node(p);
-            Graph::vertex_set So = G.out_neighbors(p);
-            for (Graph::vertex_set::const_iterator t = So.begin(); t !=So.end(); t++)
-                net[bl*N*edges + i*edges + j++] = *t;
-        }
+
+
     }
-
-    //  for (int b=0;b<blocks;b++)
-    //  {
-    //     for (int i=0;i<N;i++)
-    //    {
-    //       cout<<i<<"::";
-    //      for (int j=0;j<edges;j++)    
-    //         cout<< net[b*N*edges + i*edges + j] <<":";
-    //     cout<<endl;
-    // }
-    // }
-    // generate network
-
+    cout<<av_cc/float(blocks)<<":";
 }
-void printGraph(Graph G)
+void generateNetwork1D(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
 {
-    cout<<"Printing graph ..."<<endl;
 
-    for ( Graph::const_iterator a = G.begin(); a != G.end(); a++)
+//Jennifer Badham and Rob Stocker (2010)
+//A Spatial Approach to Network Generation for Three Properties: Degree Distribution, Clustering Coefficient and Degree Assortativity
+    float av_cc = 0.0f;
+    int he = int(0.5*edges);
+    for (int bl=0;bl<blocks;bl++)
     {
+        int allEdges[N*(edges+1)];
+        for (int i=0;i<N;i++)
+        {
+            allEdges[i*(edges+1)]=0;//edges;
+            int j = 1;
+            while (allEdges[i*(edges+1)]<edges)
+            {
 
-        int ap = G.node(a);
-        Graph::vertex_set aSo = G.out_neighbors(a);
-        cout<<ap<<"::";
-        for (Graph::vertex_set::const_iterator b = aSo.begin(); b !=aSo.end(); b++)
-            cout<<*b<<":";
-        cout<<endl;
+                if (gsl_rng_uniform(r)<trans)
+                {
+                    allEdges[i*(edges+1)]++;
+                    allEdges[i*(edges+1) + allEdges[i*(edges+1)]]= (i-(j)) % N ;
+                }
+                if ((gsl_rng_uniform(r)<trans)&(allEdges[i*(edges+1)]<edges))
+                {
+                    allEdges[i*(edges+1)]++;
+                    allEdges[i*(edges+1) + allEdges[i*(edges+1)]]= (i+(j)) % N ;
+                }
+                j++;
+            }
+
+        }
+        av_cc +=cluster_coeff(allEdges,N,edges); 
+        for (int i=0;i<N;i++)
+        {
+         //   cout<<i<<":";
+            for (int j=0;j<edges;j++){
+                net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
+                if (net[bl*N*edges + i*edges + j]<0)
+                    net[bl*N*edges + i*edges + j]+=N;
+           //     cout<<":"<<net[bl*N*edges + i*edges + j];
+            }
+           // cout<<endl;
+        }
+
+
+
+
     }
-
-    cout<<"... done"<<endl;
+        cout<<av_cc/float(blocks)<<":";
 }
-
 float cluster_coeff(int* net, int N, int edges) 
 {
     float av_cc = 0.0f;
@@ -535,33 +518,4 @@ float cluster_coeff(int* net, int N, int edges)
 
     }
     return av_cc/float(N);
-}
-float cluster_coeff2(Graph G, int N) 
-{
-    float av_cc = 0.0f;
-    for ( Graph::const_iterator a = G.begin(); a != G.end(); a++)
-    {
-        Graph::vertex_set aSo = G.out_neighbors(a);
-        float links = 0.0;
-        for (Graph::vertex_set::const_iterator b = aSo.begin(); b !=aSo.end(); b++)
-            for (Graph::vertex_set::const_iterator c = aSo.begin(); c !=aSo.end(); c++)
-                if (G.includes_edge(G.node(b),G.node(c)))
-                    links+=1.0;
-        //cout<<links<<endl;
-        double  e = G.out_neighbors(a).size(); 
-        av_cc +=  links / (e * (e-1));
-    }
-    return av_cc/float(N);
-}
-float cluster_coeff_v(Graph G, int v) 
-{
-    Graph::vertex_set aSo = G.out_neighbors(v);
-    float links = 0.0;
-    for (Graph::vertex_set::const_iterator b = aSo.begin(); b !=aSo.end(); b++)
-        for (Graph::vertex_set::const_iterator c = aSo.begin(); c !=aSo.end(); c++)
-            if (G.includes_edge(G.node(b),G.node(c)))
-                links+=1.0;
-    //cout<<links<<endl;
-    double  e = G.out_neighbors(v).size(); 
-    return links / (e * (e-1));
 }
