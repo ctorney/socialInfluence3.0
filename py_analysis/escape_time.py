@@ -10,8 +10,8 @@ import matplotlib as mpl
 from scipy import integrate
 from scipy import optimize
 
-NA = 64
-Ns =18
+NA = 512
+Ns = 20
 K = 90       
 ws = 0.524
 
@@ -34,8 +34,9 @@ def tdown(X,sig):
 def EXTAPPROX(X,sig):  
     A = np.log(K)/(2.0) - 1/sig
     B = np.log(K)
-    VR = 0.5*B**2*X*(1-X)/float(Ns)
-    return m.exp(-A)*0.5*m.exp((B*X))*(1.0 +  VR +  ((VR/(1.0+VR))*alpha * B * X * (Ns-1)/float(Ns)))
+    rho = alpha*X/(1.0-X)
+    VR = 0.5*B**2*X*(1-X)*(       rho  + ((1.0-rho)/float(Ns)) )
+    return m.exp(-A)*0.5*m.exp((B*X))*(1.0 +  VR)
 def EXTAPPROX0(X,sig):  
     A = np.log(K)/(2.0)# - 1/sig
     B = np.log(K)
@@ -46,15 +47,15 @@ def atup(X,sig):
     return (1-X)*(EXTAPPROX(X,sig))
 def atdown(X,sig): 
     return (X)*(1.0-EXTAPPROX(X,sig))
-numA = 15
+numA = 21
 sigs = np.zeros(numA)
 atimes = np.zeros(numA)
 atimes2 = np.zeros(numA)
-alpha = 0.30
+alpha = 0.0
 for acount in range(numA):
-    
-    sigma  = 2.5+0.5*float(acount)
-    sigs[acount]=sigma#np.sqrt(sigma)
+    alpha = 0.0+0.05*float(acount)
+    sigma  = 4.0#2.0+0.25*float(acount)
+    sigs[acount]=alpha#sigma#np.sqrt(sigma)
     
     A = np.log(K)/(2.0) - 1/sigma
     B = np.log(K)
