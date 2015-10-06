@@ -44,9 +44,9 @@ int main()
     r = gsl_rng_alloc (T);
 
     // number of reps
-    int numBlocks = 256;
+    int numBlocks = 128;//512;
     // length of grid
-    int N = 256;
+    int N = 1024;
     int N2 = 0.5 * N;
     int N4 = 0.5 * N2;
     int N_ALL = N * numBlocks;
@@ -90,7 +90,7 @@ int main()
             results[i]=0.0f;
 
 
-        float sigma = 5.0;//2.5 + 0.25 * float(G);
+        float sigma = 4.5;//2.5 + 0.25 * float(G);
         cout<<"#~~~~~~~~~~~~~~~~~~"<<endl<<"#sigma "<<sigma<<"Ns "<<Ns<<" chi "<<chi<<endl<<"#~~~~~~~~~~~~~~~~~~"<<endl;
 
         char fileName[30];
@@ -393,33 +393,36 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
             int j = 1;
             int offx=0;
             int offy=0;
+            int dx[4] = {0, 1, 0, -1};
+            int dy[4] = {1, 0, -1, 0};
             while (allEdges[i*(edges+1)]<edges)
             {
-                float move = gsl_rng_uniform(r);
-                if (move<0.5)
+                j++;
+                for (int k=0;k<j/2;k++)
                 {
-                    if (move<0.25)
-                        offx++;
-                    else
-                        offx--;
-                }
-                else
-                {
-                    if (move<0.75)
-                        offy++;
-                    else
-                        offy--;
-                }
- //            cout<<i<<" "<<(allEdges[i*(edges+1)])<<endl;
-                int jx = (ix+offx)%nx;
-                int jy = (iy+offy)%nx;
+                    if (allEdges[i*(edges+1)]==edges)
+                        break;
 
-                if ((gsl_rng_uniform(r)<trans)&(asigned[jx][jy]==0))
-                {
-                    asigned[jx][jy]=1;
-                    allEdges[i*(edges+1)]++;
-                    int nj = jx*nx + jy;
-                    allEdges[i*(edges+1) + allEdges[i*(edges+1)]]= nj;
+                    offx += dx[j % 4];
+                    offy += dy[j % 4];
+                    //            cout<<i<<" "<<(allEdges[i*(edges+1)])<<endl;
+                    int jx = (ix+offx)%nx;
+                    int jy = (iy+offy)%nx;
+
+                    if ((gsl_rng_uniform(r)<trans))//&(asigned[jx][jy]==0))
+                    {
+                        asigned[jx][jy]=1;
+                        allEdges[i*(edges+1)]++;
+                        int nj = jx*nx + jy;
+                        allEdges[i*(edges+1) + allEdges[i*(edges+1)]]= nj;
+                    }
+                    else
+                    {
+                        asigned[jx][jy]=1;
+                        allEdges[i*(edges+1)]++;
+                        allEdges[i*(edges+1) + allEdges[i*(edges+1)]]= gsl_rng_uniform_int(r,N);
+
+                    }
                 }
             }
 
@@ -427,14 +430,14 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
         av_cc +=cluster_coeff(allEdges,N,edges); 
         for (int i=0;i<N;i++)
         {
- //           cout<<i<<":";
+            //           cout<<i<<":";
             for (int j=0;j<edges;j++){
                 net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
                 if (net[bl*N*edges + i*edges + j]<0)
                     net[bl*N*edges + i*edges + j]+=N;
-   //             cout<<":"<<net[bl*N*edges + i*edges + j];
+                //             cout<<":"<<net[bl*N*edges + i*edges + j];
             }
-     //       cout<<endl;
+            //       cout<<endl;
         }
 
 
@@ -446,8 +449,8 @@ void generateNetwork(int* net, int blocks, int N, int edges, float trans, gsl_rn
 void generateNetwork1D(int* net, int blocks, int N, int edges, float trans, gsl_rng* r)
 {
 
-//Jennifer Badham and Rob Stocker (2010)
-//A Spatial Approach to Network Generation for Three Properties: Degree Distribution, Clustering Coefficient and Degree Assortativity
+    //Jennifer Badham and Rob Stocker (2010)
+    //A Spatial Approach to Network Generation for Three Properties: Degree Distribution, Clustering Coefficient and Degree Assortativity
     float av_cc = 0.0f;
     int he = int(0.5*edges);
     for (int bl=0;bl<blocks;bl++)
@@ -477,7 +480,7 @@ void generateNetwork1D(int* net, int blocks, int N, int edges, float trans, gsl_
         av_cc +=cluster_coeff(allEdges,N,edges); 
         for (int i=0;i<N;i++)
         {
-         //   cout<<i<<":";
+            //   cout<<i<<":";
             for (int j=0;j<edges;j++){
                 net[bl*N*edges + i*edges + j] =allEdges[i*(edges+1)+j+1];
                 if (net[bl*N*edges + i*edges + j]<0)
