@@ -2,6 +2,8 @@
 # Top-Level CmakeLists.txt
 cmake_minimum_required(VERSION 2.6)
 PROJECT( INF )
+set( CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} . )
+
 
 find_package(VTK QUIET)
 find_package(CUDA REQUIRED)

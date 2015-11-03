@@ -40,7 +40,7 @@ __global__ void d_updateStates(int* states, int* net, float sigma, int N, curand
         if (states[n2]>0.5)
             deltan++;
     }
-    float s_exp = 1.0f - 2.0f*float(deltan)/float(Ns);
+    float s_exp = 0.50f - float(deltan)/float(Ns);
 
     float lp;
     if (curand_uniform(&d_rands[id])<0.5)
@@ -50,10 +50,10 @@ __global__ void d_updateStates(int* states, int* net, float sigma, int N, curand
 
 
     //float pup = exp((1.0f/sigma)*(abs(lp-1000.0f)-abs(lp+1000.0f)));
-    float pup = exp((1.0f/sigma)*(-2.0*lp));
-    float pall = pup*powf(chi,s_exp);
+ //   float pup = exp((1.0f/sigma)*(-2.0*lp));
+ //   float pall = pup*powf(chi,s_exp);
     int newState;
-    if (pall<1.0f)
+    if (lp>sigma*chi*s_exp)
         newState = 1;
     else
         newState = 0;
@@ -62,12 +62,6 @@ __global__ void d_updateStates(int* states, int* net, float sigma, int N, curand
 
     if (t==threadIdx.x)
         states[id] = newState;
-    bool debug = 0;
-    if ((debug)&&(threadIdx.x==t))
-    {
-        int sCount = 0;
-        printf("%0.5f %0.5f %0.5f %d \n",s_exp, pup, pall, newState );
-    }
 }
 
 __global__ void d_recordData(int* states, int* states2, curandState* d_rands,  int N_x, float* d_up, float* d_down, int* d_upcount, int* d_downcount, int t)

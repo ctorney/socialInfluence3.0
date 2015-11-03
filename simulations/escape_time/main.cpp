@@ -44,14 +44,15 @@ int main()
     r = gsl_rng_alloc (T);
 
     // number of reps
-    int numBlocks = 128;//512;
+    int numBlocks = 512;
     // length of grid
     int N = 1024;
     int N2 = 0.5 * N;
     int N4 = 0.5 * N2;
     int N_ALL = N * numBlocks;
 
-    int Ns = 20;
+    int Ns = 30;
+    float sigma = 4.0;//2.5 + 0.25 * float(G);
 
     dim3 threadGrid(N);
     curandState *devRands;
@@ -90,7 +91,6 @@ int main()
             results[i]=0.0f;
 
 
-        float sigma = 4.5;//2.5 + 0.25 * float(G);
         cout<<"#~~~~~~~~~~~~~~~~~~"<<endl<<"#sigma "<<sigma<<"Ns "<<Ns<<" chi "<<chi<<endl<<"#~~~~~~~~~~~~~~~~~~"<<endl;
 
         char fileName[30];

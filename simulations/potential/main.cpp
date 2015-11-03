@@ -8,14 +8,14 @@ int main()
     gsl_rng_env_setup();
 
     // number of reps
-    int numBlocks = 512;
+    int numBlocks = 2048;
 
     // number of individuals in a group
-    int N = 64;
+    int N = 512;
     int N_ALL = N * numBlocks;
 
     // number of social observations
-    int Ns = 18;
+    int Ns = 20;
 
     // *********************************
     //      declare host variables
@@ -73,11 +73,11 @@ int main()
             CUDA_CALL(cudaMemset (d_down, 0, sizeof(float) * (N + 1)));
             CUDA_CALL(cudaMemset (d_upcount, 0, sizeof(int) * (N + 1)));
 
-            float cluster = 0.85;
+            float cluster = 0.75;
             generateNetworkSW(h_net, numBlocks, N, Ns, cluster,r);
             CUDA_CALL(cudaMemcpy (d_net, h_net, (N_ALL*Ns) * sizeof(int), cudaMemcpyHostToDevice));
 
-            float sigma = 5.5 + 0.5 * float(G);
+            float sigma = 4.0;//5.5 + 0.5 * float(G);
             char fileName[300];
             sprintf(fileName, "../output/potential%f-%f.npy", sigma, cluster);
 
